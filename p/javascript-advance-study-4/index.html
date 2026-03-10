@@ -1,0 +1,274 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="描述"><title>JavaScript提升系列（四）：数据类型 | 高小调博客</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/normalize/latest/normalize.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/pure-min.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/grids-responsive-min.min.css"><link rel="stylesheet" href="//lib.baomitu.com/font-awesome/4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//lib.baomitu.com/jquery/latest/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><script type="text/javascript" src="//lib.baomitu.com/clipboard.js/latest/clipboard.min.js"></script><script type="text/javascript" src="//lib.baomitu.com/toastr.js/latest/toastr.min.js"></script><link rel="stylesheet" href="//lib.baomitu.com/toastr.js/latest/toastr.min.css"><meta name="generator" content="Hexo 8.1.1"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">JavaScript提升系列（四）：数据类型</h1><a id="logo" href="/.">高小调博客</a><p class="description">人生，不止代码</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> 首页</i></a><a href="/about-me/"><i class="fa fa-user"> 关于</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">JavaScript提升系列（四）：数据类型</h1><div class="post-meta">2020-03-23</div><div class="post-content"><h2 id="前言"><a class="markdownIt-Anchor" href="#前言"></a> 前言</h2>
+<p>前方高能预警：本文中<code>Number类型</code>及其基础、硬核且无聊，导致大部分人觉得这些内容没什么用。<strong>如果你中途坚持不住，建议点赞，收藏后，改日再战。</strong></p>
+<p>对于初次接触JavaScript的朋友来说，本文信息量略为丰富，建议收藏，多多复习，练习。</p>
+<p>如果你为了追求极致的学习速度，想知道JavaScript与C++/Java不同之处，请直接翻到文末小结部分。</p>
+<h2 id="数据类型"><a class="markdownIt-Anchor" href="#数据类型"></a> 数据类型</h2>
+<p>ECMAScript中有5种基本数据类型：<code>Undefined</code>, <code>Null</code>, <code>Boolean</code>, <code>Number</code>和<code>String</code>和一种复杂数据类型<code>Object</code>。<br />
+<strong>ECMAScript不支持任何创建自定义类型的机制，所有值最终都将是上述6种数据类型之一。</strong></p>
+<h3 id="typeof操作符"><a class="markdownIt-Anchor" href="#typeof操作符"></a> typeof操作符</h3>
+<p>对一个值使用<code>typeof</code>操作符，可能会返回下列某个字符串：</p>
+<ul>
+<li><code>&quot;undefined&quot;</code>，变量未被初始化，或变量未被定义。</li>
+<li><code>&quot;boolean&quot;</code>，布尔值。</li>
+<li><code>&quot;string&quot;</code>，字符串。</li>
+<li><code>&quot;number&quot;</code>，数值。</li>
+<li><code>&quot;object&quot;</code>，对象或<code>null</code>。</li>
+<li><code>&quot;function&quot;</code>，函数。</li>
+</ul>
+<h3 id="undefined类型"><a class="markdownIt-Anchor" href="#undefined类型"></a> Undefined类型</h3>
+<p><code>Undefined类型</code>只有一个值，就是<code>undefined</code>。<br />
+在使用<code>var</code>声明变量但未对其进行初始化时，该值为<code>undefined</code>。<br />
+<strong>包含<code>undefined</code>值的变量和尚未定义的变量是不一样的</strong>，如下例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">var message;   //该变量默认为undefined。</span><br><span class="line"></span><br><span class="line">//下面变量未被声明</span><br><span class="line">//var age; </span><br><span class="line"></span><br><span class="line">alert(message);  //undefined</span><br><span class="line">alert(age);     //ReferenceError: age is not defined.</span><br></pre></td></tr></table></figure>
+<p>迷惑的是，在使用<code>typeof</code>操作符时，两者的值都是<code>undefined</code>，如下例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">alert(typeof message);  //&quot;undefined&quot;</span><br><span class="line">alert(typeof age);          //&quot;undefined&quot;</span><br></pre></td></tr></table></figure>
+<p>所以，**强烈推荐显式的初始化变量。<strong>这样，我们就可以知道被检测的变量的状态是没声明，而不是尚未初始化。</strong></p>
+<h3 id="null类型"><a class="markdownIt-Anchor" href="#null类型"></a> Null类型</h3>
+<p>Null类型也只有一个值，就是<code>null</code>。<br />
+从逻辑角度来看，<code>null</code>值表示一个对象的空指针，事实上，这也就解释了为什么在使用<code>typeof</code>操作符检测<code>null</code>时，会返回&quot;object&quot;。如下例所示。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var car = null;</span><br><span class="line">alert(typeof car);  //&quot;object&quot;</span><br></pre></td></tr></table></figure>
+<p>如果**定义的变量要用于保存对象的话，最好将该变量初始化为<code>null</code>。**这样只需要检查<code>null</code>值就可以知道相应的变量是否已经保存了一个变量引用。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">var car = null;</span><br><span class="line">if( car!=null )&#123;</span><br><span class="line">  //对car对象执行某些操作</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>需要注意的是，<strong><code>undefined</code>的值是派生自<code>null</code>值的</strong>，因此ECMA-262规定对它们进行相等性测试时，必须返回true。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alert( undefined==null );    //true</span><br></pre></td></tr></table></figure>
+<p><strong>无论在什么情况下都没必要把一个变量的值显式设置为undefined</strong>，这样可以有助于区分<code>undefined</code>与<code>null</code>。</p>
+<h3 id="boolean类型"><a class="markdownIt-Anchor" href="#boolean类型"></a> Boolean类型</h3>
+<p><code>Boolean</code>类型是ECMAScript中使用最多的一种类型，该类型只有两个字面值<code>true</code>和<code>false</code>。<strong>（注意：<code>true</code>和<code>false</code>是区分大小写的）</strong><br />
+ECMAScript中所有类型的值都可以通过<code>Boolean()</code>函数来转换为相应的等价值。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var message = &quot;Hello World!&quot;;</span><br><span class="line">alert(Boolean(message));    //true</span><br></pre></td></tr></table></figure>
+<p>下表为各类数据类型与<code>Boolean</code>类型的转换规则。</p>
+<table>
+<thead>
+<tr>
+<th>数据类型</th>
+<th>转换为ture</th>
+<th>转换为false</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Boolean</td>
+<td>true</td>
+<td>false</td>
+</tr>
+<tr>
+<td>String</td>
+<td>任何非空字符串</td>
+<td>“”</td>
+</tr>
+<tr>
+<td>Number</td>
+<td>任何非零数字值（包括无穷大）</td>
+<td>0和NaN</td>
+</tr>
+<tr>
+<td>Object</td>
+<td>任何对象</td>
+<td>null</td>
+</tr>
+<tr>
+<td>Undefined</td>
+<td>无</td>
+<td>undefined</td>
+</tr>
+</tbody>
+</table>
+<h3 id="number类型"><a class="markdownIt-Anchor" href="#number类型"></a> Number类型</h3>
+<p>最基本的字面值格式是十进制整数，如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var intNum = 123;</span><br></pre></td></tr></table></figure>
+<p>除十进制外，整数还可以通过八进制或十六进制的字面值来表示。</p>
+<h4 id="八进制"><a class="markdownIt-Anchor" href="#八进制"></a> 八进制</h4>
+<p>八进制字面值的第一位必须是零（0），然后是八进制数字序列（0～7）。如果字面值中的数值超出了范围，那么前导0将会被忽略，后面的数值按照十进制解析。如下例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">var octalNum1 = 070;  //八进制的56</span><br><span class="line">var octalNum2 = 079;  //无效的八进制数值，解析为79</span><br><span class="line">var octalNum3 = 08;    //无效的八进制数据，解析为8</span><br></pre></td></tr></table></figure>
+<p><strong>八进制在严格模式下是无效的，会导致支持的JavaScript引擎抛出错误。</strong></p>
+<h4 id="十六进制"><a class="markdownIt-Anchor" href="#十六进制"></a> 十六进制</h4>
+<p>十六进制的前两位必须是0x，后跟任何十六进制数字（0～9及A～F）。其中，A~F字母即可以大写，也可以小写。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var hexNum1 = 0xA;  //十六进制的10</span><br><span class="line">var hexNum2 = 0x1f;  //十六进制的31</span><br></pre></td></tr></table></figure>
+<p>在进行算数运算时，所有以八进制和十六进制表示的数值最终都将转换为十进制数值。</p>
+<h4 id="浮点数值"><a class="markdownIt-Anchor" href="#浮点数值"></a> 浮点数值</h4>
+<p>浮点数值，该数值中必须包含一个小数点，并且小数点后面至少得有一位数字。<br />
+小数点前面可以省略整数，但不推荐。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">var floatNum1 = 1.1;</span><br><span class="line">var floatNum2 = 0.1;</span><br><span class="line">var floatNum3 = .1;    //有效，但不推荐。</span><br></pre></td></tr></table></figure>
+<p>由于保存浮点整数需要的内存空间是保存整数的两倍，所以ECMAScript会不失时机的将浮点数值转换为整数值。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var floatNum1 = 1.;      //小数点后面没有数字，解析为1。</span><br><span class="line">var floatNum2 = 10.0;  //整数，解析为10。</span><br></pre></td></tr></table></figure>
+<p>对于极大或极小的值，可以使用e表示法(科学计数法)表示的浮点数表示。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var floatNum1 = 3.125e7;  //3.125*10^7 = 31250000</span><br><span class="line">var floatNum2 = 3e-17;      //3*10^(-17) = 0.00000000000000003</span><br></pre></td></tr></table></figure>
+<p>浮点数值的最高精度是17位小数，但在算术计算时，其精度远远不如整数。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">alert(0.1+0.2);       //0.30000000000000004</span><br><span class="line">alert(0.1+0.2==0.3);  //false</span><br></pre></td></tr></table></figure>
+<h4 id="数值范围"><a class="markdownIt-Anchor" href="#数值范围"></a> 数值范围</h4>
+<p>ECMAScript能够表示最小的数值保存在<code>Number.MIN_VALUE</code>，大多数浏览器中，其值为<code>5e-324</code>。<br />
+ECMAScript能够表示最大的数值保存在<code>Number.MAX_VALUE</code>中，大多数浏览器中，其值为<code>1.7976931348623157e+308</code>。</p>
+<p>当某次计算的结果得到了超出JavaScript数值范围的值时，这个数值会自动转换为<code>Infinity</code>值。<br />
+当该值为正无穷时，得到的是<code>Infinity</code>值；该值为负无穷时，得到的是<code>-Infinity</code>值。</p>
+<p>当某次计算的值返回了正或负<code>Infinity</code>值时，该值无法继续参与下一次计算，因为<code>Infinity</code>不是能够参与计算的数值。<br />
+我们可以通过<code>isFinite()</code>函数来判断一个数值是否是无穷。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">alert(isFinite(0));                     //false</span><br><span class="line">alert(isFinite(Number.MAX_VALUE+1));    //true</span><br></pre></td></tr></table></figure>
+<h4 id="nan"><a class="markdownIt-Anchor" href="#nan"></a> NaN</h4>
+<p><code>NaN</code>，非数值，是一个特殊的数值，用于表示一个本来要返回数值的操作未返回数值的情况。例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alert(1/0);    //NaN</span><br></pre></td></tr></table></figure>
+<p><code>NaN</code>本身有两个非比寻常的特点。</p>
+<ul>
+<li><strong>任何涉及与<code>NaN</code>操作，结果都是<code>NaN</code>。</strong>（好比0乘任何数都得0）</li>
+<li><strong><code>NaN</code>不与任何数值相等，包括<code>NaN</code>自己。</strong></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">alert(0*NaN);        //NaN</span><br><span class="line">alert(0/NaN);        //NaN</span><br><span class="line">alert(0+NaN);       //NaN</span><br><span class="line">alert(0-NaN);        //NaN</span><br><span class="line">alert(NaN==NaN);  //false</span><br></pre></td></tr></table></figure>
+<p>因此，ECMAScript定义了<code>isNaN()</code>函数，用来确定参数是否为<code>NaN</code>。<br />
+该函数接受到值后，会尝试将该值转换为数值，任何不能被转换为数值的值都会导致这个函数返回true。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">alert(isNaN(NaN));          //true</span><br><span class="line">alert(isNaN(0));               //false</span><br><span class="line">alert(isNaN(&quot;Hello&quot;));      //true, &quot;Hello&quot;不能被转换为数值。</span><br><span class="line">alert(isNaN(isNaN(NaN)))  //false</span><br></pre></td></tr></table></figure>
+<h4 id="数值转换"><a class="markdownIt-Anchor" href="#数值转换"></a> 数值转换</h4>
+<p>有三个函数，可以把非数值转换为数值。</p>
+<ul>
+<li><code>Number()</code>，将任何数据类型转换为整型数值。</li>
+<li><code>parseInt()</code>，将字符串转为整型数值。</li>
+<li><code>parseFloat()</code>, 将字符串转为浮点型数值。</li>
+</ul>
+<p><code>Number()</code>转换规则如下：</p>
+<ul>
+<li><code>Boolean</code>类型，<code>true</code>和<code>false</code>被转换为<code>1</code>和<code>0</code>。</li>
+<li>数字类型，只是简单的传入和返回。</li>
+<li><code>null</code>，返回<code>0</code>。</li>
+<li><code>undefined</code>，返回<code>NaN</code>。</li>
+<li>字符串遵循以下规则:
+<ul>
+<li>如果字符串中只包含数字，则将其转换为十进制数。</li>
+<li>如果字符串中包含有效的浮点数格式，则转换为相应的浮点数值。</li>
+<li>如果字符串中包含有效的16进制格式，则转换为相同大小的10进制数值。</li>
+<li>如果字符串为<code>&quot;&quot;</code>，返回0。</li>
+<li>如果字符串中包含上述格式之外的字符，则转换为<code>NaN</code>。</li>
+</ul>
+</li>
+<li>如果是对象，则调用对象的<code>valueOf()</code>方法，然后依照前面的规则转换返回的值。如果转换的结果是NaN，则调用对象的<code>toString()</code>方法，然后再依照前面的规则转换返回的字符。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">var num1 = Number(&quot;1111&quot;);        //1111</span><br><span class="line">var num2 = Number(true);            //1</span><br><span class="line">var num3 = Number(&quot;&quot;);                //0</span><br><span class="line">var num4 = Number(&quot;123a&quot;);        //NaN，因为包含字母a</span><br><span class="line">var num5 = Number(&quot;0xf&quot;);            //15</span><br></pre></td></tr></table></figure>
+<p>相比较<code>Number()</code>函数，<code>parseInt()</code>函转换规则就宽松多了，<code>parseInt()</code>函数在转换字符串时，更多的是看其是否符合数值模式。<br />
+它会忽略字符串前面的空格，直至找到第一个非空格字符。<br />
+如果第一个字符不是负号或数字，那么<code>parseInt()</code>函数会返回<code>NaN</code>。<br />
+如果第一个字符是数字，<code>parseInt()</code>函数会继续解析第二个字符，直到解析完成，或者遇到非数字字符。<br />
+如果字符串以<code>0x</code>开头，<code>parseInt()</code>函数会将其当作16进制整数。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">var num1 = parseInt(&quot;           123&quot;);    //123</span><br><span class="line">var num2 = parseInt(&quot;123a&quot;);            //123</span><br><span class="line">var num3 = parseInt(&quot;&quot;);                    //NaN</span><br><span class="line">var num4 = parseInt(&quot;0xf&quot;);                //15</span><br><span class="line">var num5 = parseInt(&quot;07&quot;);                //ECMAScript3中返回56，ECMAScript5以上返回7</span><br></pre></td></tr></table></figure>
+<p>在使用<code>parseInt()</code>函数解析八进制字面值数值时，ECMAScript3和ECMAScript5存在分歧，为了消除上述困惑，可以为这个函数提供第二个参数：转换时的基数。<br />
+如果知道当前字符串是16进制，那么可以指定基数为16，例子如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">var num1 = parseInt(&quot;f&quot;,16);    //15</span><br><span class="line">var num2 = parseInt(&quot;70&quot;,8);    //56</span><br><span class="line">var num3 = parseInt(&quot;10&quot;,2);    //2</span><br></pre></td></tr></table></figure>
+<p>不指定基数意味着让<code>parseInt()</code>函数决定如何解析输入的字符串，为了避免错误解析，<strong>强烈建议无论在什么情况下都明确指定基数。</strong></p>
+<p><code>parseFloat()</code>函数与<code>parseInt()</code>函数类似，也是从第一个字符开始解析每一个字符，而且也是一直解析到字符串末尾，或者解析遇到了一个无效的浮点数字符为止。<br />
+<code>parseFloat()</code>函数会始终忽略前导的<code>0</code>。由于<code>parseFloat()</code>函数只解析10进制数，因此它没有第二个参数指定基数的用法。<br />
+如果字符串包含的是一个可解析为整数的数，<code>parseFloat()</code>函数会返回整数。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">var num1 = parseFloat(&quot;1234abcd&quot;);          //1234，解析到整数值，返回整数1234</span><br><span class="line">var num2 = parseFloat(&quot;0xA&quot;);                    //0，遇到x无效字符，返回0</span><br><span class="line">var num3 = parseFloat(&quot;22.5&quot;);                  //22.5</span><br><span class="line">var num4 = parseFloat(&quot;22.34.5&quot;);              //22.34，遇到.无效字符，返回22.34</span><br><span class="line">var num5 = parseFloat(&quot;0908.5&quot;);                //908.5，忽略前导0，返回908.5</span><br><span class="line">var num6 = parseFloat(&quot;3.125e7&quot;);            //31250000</span><br></pre></td></tr></table></figure>
+<h2 id="string类型"><a class="markdownIt-Anchor" href="#string类型"></a> String类型</h2>
+<p><code>String</code>类型用于表示零或多个<code>16位Unicode</code>组成的字符序列，即字符串。<br />
+通常有两种表示方法。（ECMAScript6中，新增一种表示方法）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var firstName = &quot;Nicholas&quot;;</span><br><span class="line">var lastName = &#x27;Zakas&#x27;;</span><br></pre></td></tr></table></figure>
+<p>单引号表示的字符串与双引号表示的字符串完全相同，但双引号开头必须双引号结尾，单引号开头必须单引号结尾。</p>
+<h3 id="字面值常量"><a class="markdownIt-Anchor" href="#字面值常量"></a> 字面值常量</h3>
+<p><code>String</code>类型包含一些特殊的字符字面值，也叫转义序列，用于表示非打印字符，或其它用途的字符，这些字面值如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th>字面量</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\n</td>
+<td>换行</td>
+</tr>
+<tr>
+<td>\t</td>
+<td>制表</td>
+</tr>
+<tr>
+<td>\b</td>
+<td>空格</td>
+</tr>
+<tr>
+<td>\r</td>
+<td>回车</td>
+</tr>
+<tr>
+<td>\f</td>
+<td>进纸</td>
+</tr>
+<tr>
+<td>\\</td>
+<td>斜杠</td>
+</tr>
+<tr>
+<td>\’</td>
+<td>单引号’</td>
+</tr>
+<tr>
+<td>\&quot;</td>
+<td>双引号&quot;</td>
+</tr>
+<tr>
+<td>\xnn</td>
+<td>以16进制代码nn表示字符，\x41表示&quot;A&quot;</td>
+</tr>
+<tr>
+<td>\unnnn</td>
+<td>以十六进制代码nnnn表示一个Unicode字符，\u03a3表示希腊字母</td>
+</tr>
+<tr>
+<td>上述字符字面值可以出现在字符串中任意位置，而且也作为一个字符被解析。</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var text = &quot;This is the letter sigma: \u03a3.&quot;;</span><br><span class="line">alert(text.length);      //28</span><br></pre></td></tr></table></figure>
+<p>如果字符串中包含双字节字符，那么<code>length</code>属性可能不会精确返回字符串中字符的数目。</p>
+<h3 id="字符串的特点"><a class="markdownIt-Anchor" href="#字符串的特点"></a> 字符串的特点</h3>
+<p>ECMAScript中的字符串是不可变的，也就是说，字符串一旦创建，他们的值就不能改变。<br />
+要改变某个变量保存的字符串，首先得先销毁原来的字符串，再用另一个新字符串填充该变量。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var str = &quot;Hello&quot;;</span><br><span class="line">str = str + &quot; World!&quot;;    // Hello World!</span><br></pre></td></tr></table></figure>
+<h3 id="转换为字符串"><a class="markdownIt-Anchor" href="#转换为字符串"></a> 转换为字符串</h3>
+<p>有两种方式可以将一个值转换为字符串：<br />
+除了<code>null</code>和<code>undefined</code>之外，每个值都有的<code>toString()</code>函数。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">var x = 100;</span><br><span class="line">var xString = x.toString();  //  &quot;100&quot;</span><br><span class="line">var y = true;</span><br><span class="line">var yString = y.toString();  // &quot;true&quot;</span><br></pre></td></tr></table></figure>
+<p>大多数情况下，<code>toString()</code>函数不必传递参数，但在调用数值的<code>toString()</code>函数时，可以传递一个参数：输出值的基数。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">var num = 10;</span><br><span class="line">var numString1 = num.toString();    // &quot;10&quot;</span><br><span class="line">var numString2 = num.toString(2);  // &quot;1010&quot;</span><br><span class="line">var numString3 = num.toString(8);  // &quot;12&quot;</span><br><span class="line">var numString4 = num.toString(10);  // &quot;10&quot;</span><br><span class="line">var numString5 = num.toString(16);  // &quot;a&quot;</span><br></pre></td></tr></table></figure>
+<p>在不知道值是否为<code>null</code>或<code>undefined</code>时，还可以使用转型函数<code>String()</code>，这个函数能够将任何类型的值转换为字符串。<br />
+<code>String()</code>函数遵循下列转换规则：</p>
+<ul>
+<li>如果值有<code>toString()</code>函数，则调用该方法，并返回相应的结果。</li>
+<li>如果值是<code>null</code>，则返回<code>&quot;null&quot;</code>。</li>
+<li>如果值是<code>undefined</code>，则返回<code>&quot;undefined&quot;</code>。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">var v1 = 123;</span><br><span class="line">var v2 = true;</span><br><span class="line">var v3 = null;</span><br><span class="line">var v4;</span><br><span class="line">alert(String(v1));  // &quot;123&quot;</span><br><span class="line">alert(String(v2));  // &quot;true&quot;</span><br><span class="line">alert(String(v3));  // ”null“</span><br><span class="line">alert(String(v4));  // &quot;undefined&quot;</span><br></pre></td></tr></table></figure>
+<h2 id="object类型"><a class="markdownIt-Anchor" href="#object类型"></a> Object类型</h2>
+<p>ECMAScript中的对象其实就是一组数据和功能的集合。对象可以通过执行<code>new</code>操作符后跟要创建的对象名称来创建。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var o = new Object();</span><br></pre></td></tr></table></figure>
+<p>这个语法与Java中创建对象的语法相似，但在ECMAScript中，如果不给构造函数传递参数，则可以省略后面的那对圆括号。（不推荐此做法）</p>
+<p>在ECMAScript中，<code>Object</code>类型是所有它的实例的基础，换句话说，<code>Object</code>类型所具有的任何属性和方法也同样存在更具体的对象中。</p>
+<p><code>Object</code>的每个实例都有下列属性和方法。</p>
+<ul>
+<li><code>Constructor</code>，保存着用于创建当前对象的函数。</li>
+<li><code>hasOwnProperty(propertyName)</code>，用于检查给定的属性在当前实例中是否存在，其中<code>propertyName</code>参数必须以字符串形式指定。</li>
+<li><code>isPrototypeOf(object)</code>，用于检查传入的对象是否是另一个对象的原型。</li>
+<li><code>propertyIsEnumerable(propertyName)</code>，用于检查给定的属性是否能使用<code>for-in</code>语句来枚举。</li>
+<li><code>toLocaleString()</code>，返回对象的字符串表示，该字符串与执行环境地区相对应。</li>
+<li><code>toString()</code>，返回对象的字符串表示。</li>
+<li><code>valueOf()</code>，返回对象的字符串，数值或布尔值表示。通常与<code>toString()</code>方法的返回值相同。</li>
+</ul>
+<p>**从技术角度来说，ECMA-262中对象的行为不一定适用于JavaScript中的其他对象。**浏览器中的对象，比如BOM和DOM中的对象，都属于宿主对象，因为它们是由宿主实现提供和定义的。</p>
+<h2 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h2>
+<p>本文总结分为如下三大部分，以下总结不知道原理的，评论区见。</p>
+<h3 id="与cjava不同之处"><a class="markdownIt-Anchor" href="#与cjava不同之处"></a> 与C++/Java不同之处</h3>
+<ul>
+<li>JavaScript只有6种数据类型（<code>Number</code>, <code>Boolean</code>, <code>Object</code>, <code>Undefined</code>, <code>Null</code>, <code>String</code>），且不支持用户自定义类型。</li>
+<li>JavaScript中当计算溢出时，结果会为正或负<code>Infinity</code>。</li>
+<li>JavaScript中有一个神奇的值<code>NaN</code>。</li>
+</ul>
+<h3 id="严格模式"><a class="markdownIt-Anchor" href="#严格模式"></a> 严格模式</h3>
+<ul>
+<li>在严格模式下，不能定义以八进制为字面值表示整数，会导致引擎抛出错误。</li>
+</ul>
+<h3 id="effective小技巧"><a class="markdownIt-Anchor" href="#effective小技巧"></a> Effective小技巧</h3>
+<ul>
+<li>强烈建议，定义变量时，显式的将其初始化。（为什么？）</li>
+<li>强烈建议，任何情况下，定义变量时，都不要将其初始化为<code>undefined</code>。（为什么？）</li>
+<li>强烈建议，定义要保存对象的变量时，将其初始化为<code>null</code>。（为什么？）</li>
+<li>强烈建议，使用<code>parseInt()</code>函数，而不是<code>Number()</code>函数。</li>
+<li>强烈建议，使用<code>parseInt()</code>函数时，明确指定基数。</li>
+</ul>
+</div><div class="tags"></div><div class="post-nav"><a class="pre" href="/p/javascript-advance-study-5/">JavaScript提升系列（五）：操作符</a><a class="next" href="/p/javascript-advance-study-3/">JavaScript提升系列（三）：语法与变量</a></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><div class="author-info"><a class="info-avatar" href="/about-me/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>stay hungry, stay foolish</p><a class="info-icon" href="https://twitter.com/gaoxiaodiao" title="Twitter" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:admin@domain.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/gaoxiaodiao" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/tags/linux%E5%BC%80%E5%8F%91/" style="font-size: 15px;">linux开发</a> <a href="/tags/mac%E5%BC%80%E5%8F%91/" style="font-size: 15px;">mac开发</a> <a href="/tags/%E5%B7%A5%E6%AC%B2%E5%96%84%E5%85%B6%E4%BA%8B-%E5%BF%85%E5%85%88%E5%88%A9%E5%85%B6%E5%99%A8/" style="font-size: 15px;">工欲善其事,必先利其器</a> <a href="/tags/%E9%80%86%E5%90%91-%E7%A0%B4%E8%A7%A3/" style="font-size: 15px;">逆向&破解</a> <a href="/tags/%E7%AC%AC%E4%B8%89%E6%96%B9%E5%BA%93%E7%BC%96%E8%AF%91/" style="font-size: 15px;">第三方库编译</a> <a href="/tags/%E5%BC%80%E5%8F%91-%E4%BB%A3%E7%A0%81/" style="font-size: 15px;">开发&代码</a> <a href="/tags/%E7%AC%94%E8%AE%B0/" style="font-size: 15px;">笔记</a> <a href="/tags/%E5%A4%AA%E7%9B%91/" style="font-size: 15px;">太监</a> <a href="/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E9%99%A4-%E4%BF%AE%E5%A4%8D/" style="font-size: 15px;">故障排除/修复</a> <a href="/tags/%E5%BF%83%E8%B7%AF%E5%8E%86%E7%A8%8B/" style="font-size: 15px;">心路历程</a> <a href="/tags/%E5%A5%87%E6%8A%80%E6%B7%AB%E5%B7%A7/" style="font-size: 15px;">奇技淫巧</a> <a href="/tags/%E5%89%AF%E4%B8%9A%E6%8E%A2%E7%B4%A2/" style="font-size: 15px;">副业探索</a> <a href="/tags/CTF/" style="font-size: 15px;">CTF</a> <a href="/tags/ChatGPT%E6%97%A0%E6%B3%95%E5%81%9A%E5%88%B0%E7%9A%84%E4%BA%8B%E6%83%85/" style="font-size: 15px;">ChatGPT无法做到的事情</a> <a href="/tags/Foundry/" style="font-size: 15px;">Foundry</a> <a href="/tags/%E5%8E%9F%E5%A7%8B%E7%9F%A5%E8%AF%86%E7%A7%AF%E7%B4%AF/" style="font-size: 15px;">原始知识积累</a> <a href="/tags/PowerShell/" style="font-size: 15px;">PowerShell</a> <a href="/tags/htb/" style="font-size: 15px;">htb</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/p/2025-year-end-summary/">2025年年终总结</a></li><li class="post-list-item"><a class="post-list-link" href="/p/lady-luck-is-smiling-2/">幸运女神在微笑（二）</a></li><li class="post-list-item"><a class="post-list-link" href="/p/lady-luck-is-smiling-1/">幸运女神在微笑（一）</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-6/">读书与思考之《第三次浪潮》第六章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-5/">读书与思考之《第三次浪潮》第五章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-modify-registry-by-powershell/">如何通过PowerShell来创建、读取、修改、删除注册表？</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-3_4/">读书与思考之《第三次浪潮》第三、四章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/investment-cryptocurrency-diary-1/">加密货币投资日记（一）：序言</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-use-forge-for-testing-2/">学习Foundry之编写测试代码（二）：标准库与作弊码</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-use-forge-for-testing-1/">学习Foundry之编写测试代码（一）：初识Test合约</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://gaoxiaodiao.com/" title="高小调博客" target="_blank">高小调博客</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2025 <a href="/." rel="nofollow">高小调博客.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.js"></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0"></script><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.css"><script type="text/javascript" src="/js/love.js?v=1.0.0"></script><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

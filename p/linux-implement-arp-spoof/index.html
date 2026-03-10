@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="描述"><title>Linux下用C语言实现Arp欺骗工具 | 高小调博客</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/normalize/latest/normalize.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/pure-min.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/grids-responsive-min.min.css"><link rel="stylesheet" href="//lib.baomitu.com/font-awesome/4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//lib.baomitu.com/jquery/latest/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><script type="text/javascript" src="//lib.baomitu.com/clipboard.js/latest/clipboard.min.js"></script><script type="text/javascript" src="//lib.baomitu.com/toastr.js/latest/toastr.min.js"></script><link rel="stylesheet" href="//lib.baomitu.com/toastr.js/latest/toastr.min.css"><meta name="generator" content="Hexo 8.1.1"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">Linux下用C语言实现Arp欺骗工具</h1><a id="logo" href="/.">高小调博客</a><p class="description">人生，不止代码</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> 首页</i></a><a href="/about-me/"><i class="fa fa-user"> 关于</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">Linux下用C语言实现Arp欺骗工具</h1><div class="post-meta">2017-07-05</div><div class="post-content"><p>本文章主要讲述自己如何从零开始研究,用C语言写一个Arp欺骗程序.(以记录过程为主,教程的话,有空开专题详谈.)</p>
+<p>前言:今天已经搞了整整一天了,算是有点小成就,欺骗的核心代码非常简单,知道本机以及目标主机的mac地址,然后修改arp应答包即可.</p>
+<p>但,作为一个工具,其用法总不能如下吧:</p>
+<p>Useage:./arpspoof [interface] [your_ip] [your_mac] [target_mac] [your_ip] [your_mac] [target_ip] [target_mac]</p>
+<p>这样的工具用起来多累?那么为了简化用户的操作,那我们的程序就需要默默额做很多事情…不废话,正文开始!</p>
+<h2 id="一-找接口"><a class="markdownIt-Anchor" href="#一-找接口"></a> 一、找接口</h2>
+<p>昨天写完一个简单的tcp服务器后,今天早上突然有种很强烈的欲望想把arp欺骗写出来.</p>
+<p>但,空有一身理论:arp协议、arp报文格式…实际上,我并不知道要想发送arp报文需要什么接口.</p>
+<p>所以,趁着等舍友洗漱完的时间手机了一波,c语言实现arp欺骗,最后总算找了一个看上去应该可以运行的源代码,分析了一下其所用的接口.</p>
+<p>(原文地址:<a target="_blank" rel="noopener" href="http://blog.csdn.net/smstong/article/details/7221184">http://blog.csdn.net/smstong/article/details/7221184</a>)</p>
+<p>此时才发现,原来也需要创建套接字啊!!!只不过其参数不同,TCP使用的是SOCK_STREAM…</p>
+<p>然后再看一下其发送请求的函数:sendto,这个没见过,不过无所谓,man page在手,天下我有!!!</p>
+<p>知道了相关接口,我就要开始构建arp请求包了!</p>
+<h2 id="二-构建arp包的数据类型"><a class="markdownIt-Anchor" href="#二-构建arp包的数据类型"></a> 二、构建Arp包的数据类型</h2>
+<p>为毛这个家伙的Arp包全是char?这样赋值起来多累?网络字节序是大端,那么arp请求包字节序也是大端嘛?我用的是wifi,在struct in_addr的sa_data中填写eth0还是能发出去嘛?..</p>
+<p>在构建arp数据包时,脑海中浮现出来了一系列疑问!</p>
+<p>看到那位仁兄的博客,潜移默化的把所有数据的数据类型都设置为了unsigned char,当我照着arp报文格式终于把arp数据包构建完毕时,突然发现,有些数据是2字节、有些数据是6字节、有些数据是4字节…</p>
+<p>突然觉得2、4、字节都是有现成数据类型可以满足的,全部用unsigned char数组来表示,赋值起来真的麻烦!!!</p>
+<p>于是乎,我便把2、4字节的数据用short和int表示了起来.</p>
+<p>当然,编程经验比较丰富的我,也意识到如果这样写会存在内存对齐的问题,因此我将内存对其通过#pragma pack(1)设置为1.</p>
+<h2 id="三-构建arp请求包"><a class="markdownIt-Anchor" href="#三-构建arp请求包"></a> 三、构建Arp请求包</h2>
+<p>当我把整个struct arp定义完毕时,准备先构建一个arp请求包,然后发出去试试看包构建的是否正确之类的.</p>
+<p>当我千辛万苦把arp请求数据包构建好,发送出去后,问题又来了,该用什么函数来接受arp回应数据呢?</p>
+<p>百度找了半天,没有相关信息,最后心想:罢了,用read读一下试试看.</p>
+<p>果然读到了一些莫名其妙的arp广播,虽然没读到回应包,但这足以说明至少read是可以读到数据的.</p>
+<h2 id="四-调试"><a class="markdownIt-Anchor" href="#四-调试"></a> 四、调试</h2>
+<p>数据发出去,为什么没有回应呢?谁能保证数据一定发出去了?</p>
+<p>好吧,一系列问题.因此,打开一个简易的抓包工具,tcpdump.然后再次运行程序</p>
+<p>诶?果然有一个arp请求出去了!但是…为什么没有人回应我???</p>
+<p>后来经过千方百计调试发现一系列诸多问题:</p>
+<p>1.自己的mac地址写错了!</p>
+<p>2.用short、int等数据类型,这部分字节序是小端.</p>
+<p>3.在wifi情况下,将struct addr_in中的sa_data填写为eth0,数据是不会发出去的.</p>
+<p>4.即使什么也不发,如果循环读取,还是能发现一系列arp广播,这说明只要打开某个类型的套接字,一直读取便可监听该类数据.</p>
+<p>5.有一次手贱把#pargma pack(1)删掉了,但数据结构中存在一个int,导致发出去的包总是被丢弃(通过wireshark看到的).</p>
+<h2 id="五-增强用户使用体验"><a class="markdownIt-Anchor" href="#五-增强用户使用体验"></a> 五、增强用户使用体验</h2>
+<p>至此,发送arp欺骗的核心功能已经实现了,想欺骗,改改代码重新编译一下,然后再手动数据自己mac、自己ip、目标mac、目标ip即可…</p>
+<p>当然,如果把这样的东西拿出去当工具使用,打死我,我都不会说这玩意儿是我自己写的!</p>
+<p>因此,接下来就是要提高用户使用体验,要求功能:</p>
+<p>1.你要欺骗哪台主机,我只需要知道ip即可.剩下的信息,交给程序自己搞定.</p>
+<p>2.要通过哪个接口去欺骗,把接口因素也考虑进去(eth0还是wlan0?由用户手动输入)</p>
+<p>基于以上,我需要为程序添加很多功能:</p>
+<p>1.获取自身ip与mac</p>
+<p>2.获取目标主机ip与mac</p>
+<h2 id="六-获取自身ip与mac"><a class="markdownIt-Anchor" href="#六-获取自身ip与mac"></a> 六、获取自身ip与mac</h2>
+<p>百度一搜,很多方法:</p>
+<p>方法1:<a target="_blank" rel="noopener" href="http://blog.csdn.net/langeldep/article/details/8306603">http://blog.csdn.net/langeldep/article/details/8306603</a></p>
+<p>方法2:<a target="_blank" rel="noopener" href="http://www.cnblogs.com/fnlingnzb-learner/p/6425860.html">http://www.cnblogs.com/fnlingnzb-learner/p/6425860.html</a></p>
+<p>本来觉得方法一不错,分析之,手敲之,修改之…突然发现,诶?为毛我获取的ip是0.0.0.3？</p>
+<p>仔细对比之,原来我没有做AF_INET判断…</p>
+<p>后来发现方法一,只能获取ip地址.因此我又对方法二分析之、手敲之、运行之、Ok!</p>
+<h2 id="七-获取目标主机mac"><a class="markdownIt-Anchor" href="#七-获取目标主机mac"></a> 七、获取目标主机mac</h2>
+<p>这个就不要百度了,知道目标主机ip,想知道目标主机mac,这不就是arp存在的意义?</p>
+<p>因此,我通过想目标主机发送arp请求,根据其arp回应,不就可以获得其arp???</p>
+<p>这么想的同时,我也就这么做了!</p>
+<p>结果并不令人满意.</p>
+<p>要么,向某主机发arp,其很久才回.要么,其干脆不回.</p>
+<p>这…这仅仅是arp欺骗的前项步骤,获取个mac这么慢…还怎么愉快的玩耍?</p>
+<h2 id="八-偷师学习之"><a class="markdownIt-Anchor" href="#八-偷师学习之"></a> 八、偷师学习之</h2>
+<p>而且我有些好奇,那我本机上有的arpspoof工具,它是什么获取目标mac地址的?</p>
+<p>运行之,抓包之,分析之,发现:</p>
+<p>原来人家做了两手准备:</p>
+<p>1.arp请求之,如果收到回应则获取成功!</p>
+<p>2.udp请求之,udp随意向某个端口发消息,结果收到了目标主机ICMP报告:目标不可达!!!</p>
+<p>看到这里,感叹其奥妙,默默学习之…</p>
+<p>明天再实现udp部分,今天就到此了!</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/gaoxiaodiao/Linux/tree/master/LinuxCode/ArpSpoof">https://github.com/gaoxiaodiao/Linux/tree/master/LinuxCode/ArpSpoof</a></p>
+</div><div class="tags"><a href="/tags/linux开发"><i class="fa fa-tag">linux开发</i></a></div><div class="post-nav"><a class="pre" href="/p/familiar-with-mac-app-development-1/">一步一步熟悉Mac app开发（一）之containerView</a><a class="next" href="/p/linux-signal-block-pedding-handler/">Linux下的信号(signal)的屏蔽与恢复</a></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><div class="author-info"><a class="info-avatar" href="/about-me/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>stay hungry, stay foolish</p><a class="info-icon" href="https://twitter.com/gaoxiaodiao" title="Twitter" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:admin@domain.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/gaoxiaodiao" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/tags/linux%E5%BC%80%E5%8F%91/" style="font-size: 15px;">linux开发</a> <a href="/tags/mac%E5%BC%80%E5%8F%91/" style="font-size: 15px;">mac开发</a> <a href="/tags/%E5%B7%A5%E6%AC%B2%E5%96%84%E5%85%B6%E4%BA%8B-%E5%BF%85%E5%85%88%E5%88%A9%E5%85%B6%E5%99%A8/" style="font-size: 15px;">工欲善其事,必先利其器</a> <a href="/tags/%E9%80%86%E5%90%91-%E7%A0%B4%E8%A7%A3/" style="font-size: 15px;">逆向&破解</a> <a href="/tags/%E7%AC%AC%E4%B8%89%E6%96%B9%E5%BA%93%E7%BC%96%E8%AF%91/" style="font-size: 15px;">第三方库编译</a> <a href="/tags/%E5%BC%80%E5%8F%91-%E4%BB%A3%E7%A0%81/" style="font-size: 15px;">开发&代码</a> <a href="/tags/%E7%AC%94%E8%AE%B0/" style="font-size: 15px;">笔记</a> <a href="/tags/%E5%A4%AA%E7%9B%91/" style="font-size: 15px;">太监</a> <a href="/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E9%99%A4-%E4%BF%AE%E5%A4%8D/" style="font-size: 15px;">故障排除/修复</a> <a href="/tags/%E5%BF%83%E8%B7%AF%E5%8E%86%E7%A8%8B/" style="font-size: 15px;">心路历程</a> <a href="/tags/%E5%A5%87%E6%8A%80%E6%B7%AB%E5%B7%A7/" style="font-size: 15px;">奇技淫巧</a> <a href="/tags/%E5%89%AF%E4%B8%9A%E6%8E%A2%E7%B4%A2/" style="font-size: 15px;">副业探索</a> <a href="/tags/CTF/" style="font-size: 15px;">CTF</a> <a href="/tags/ChatGPT%E6%97%A0%E6%B3%95%E5%81%9A%E5%88%B0%E7%9A%84%E4%BA%8B%E6%83%85/" style="font-size: 15px;">ChatGPT无法做到的事情</a> <a href="/tags/Foundry/" style="font-size: 15px;">Foundry</a> <a href="/tags/%E5%8E%9F%E5%A7%8B%E7%9F%A5%E8%AF%86%E7%A7%AF%E7%B4%AF/" style="font-size: 15px;">原始知识积累</a> <a href="/tags/PowerShell/" style="font-size: 15px;">PowerShell</a> <a href="/tags/htb/" style="font-size: 15px;">htb</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/p/2025-year-end-summary/">2025年年终总结</a></li><li class="post-list-item"><a class="post-list-link" href="/p/lady-luck-is-smiling-2/">幸运女神在微笑（二）</a></li><li class="post-list-item"><a class="post-list-link" href="/p/lady-luck-is-smiling-1/">幸运女神在微笑（一）</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-6/">读书与思考之《第三次浪潮》第六章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-5/">读书与思考之《第三次浪潮》第五章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-modify-registry-by-powershell/">如何通过PowerShell来创建、读取、修改、删除注册表？</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-3_4/">读书与思考之《第三次浪潮》第三、四章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/investment-cryptocurrency-diary-1/">加密货币投资日记（一）：序言</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-use-forge-for-testing-2/">学习Foundry之编写测试代码（二）：标准库与作弊码</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-use-forge-for-testing-1/">学习Foundry之编写测试代码（一）：初识Test合约</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://gaoxiaodiao.com/" title="高小调博客" target="_blank">高小调博客</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2025 <a href="/." rel="nofollow">高小调博客.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.js"></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0"></script><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.css"><script type="text/javascript" src="/js/love.js?v=1.0.0"></script><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

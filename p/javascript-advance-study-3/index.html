@@ -1,0 +1,240 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="描述"><title>JavaScript提升系列（三）：语法与变量 | 高小调博客</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/normalize/latest/normalize.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/pure-min.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/grids-responsive-min.min.css"><link rel="stylesheet" href="//lib.baomitu.com/font-awesome/4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//lib.baomitu.com/jquery/latest/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><script type="text/javascript" src="//lib.baomitu.com/clipboard.js/latest/clipboard.min.js"></script><script type="text/javascript" src="//lib.baomitu.com/toastr.js/latest/toastr.min.js"></script><link rel="stylesheet" href="//lib.baomitu.com/toastr.js/latest/toastr.min.css"><meta name="generator" content="Hexo 8.1.1"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">JavaScript提升系列（三）：语法与变量</h1><a id="logo" href="/.">高小调博客</a><p class="description">人生，不止代码</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> 首页</i></a><a href="/about-me/"><i class="fa fa-user"> 关于</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">JavaScript提升系列（三）：语法与变量</h1><div class="post-meta">2020-03-19</div><div class="post-content"><h2 id="前言"><a class="markdownIt-Anchor" href="#前言"></a> 前言</h2>
+<p>本文主要简述JavaScript的语法与变量。</p>
+<p>虽然大部分内容都与C++/Java相似，但为了尽可能完整，我还是会将相似部分列出来，我会把JavaScript与C++/Java语言不同的地方加粗显示。</p>
+<p>如果你为了追求极致的学习速度，想知道JavaScript与C++/Java不同之处，请直接翻到文末小结部分。</p>
+<h2 id="一-语法"><a class="markdownIt-Anchor" href="#一-语法"></a> 一、语法</h2>
+<p>ECMAScript的语法大量借鉴了C及其它类C语言的语法。</p>
+<h3 id="区分大小写"><a class="markdownIt-Anchor" href="#区分大小写"></a> 区分大小写</h3>
+<p>ECMAScript中所有的变量、函数名、操作符都区分大小写。</p>
+<h3 id="标识符"><a class="markdownIt-Anchor" href="#标识符"></a> 标识符</h3>
+<p>标识符，指变量、函数、属性的名字，标识符规则如下：</p>
+<ul>
+<li>第一个字符必须是字母，下划线（_），<strong>或者美元符号（$）</strong>。</li>
+<li>其它字符可以是字母，下划线，美元符号和数字。<br />
+标识符中可以包含扩展的ASCII和Unicode字母字符，但不推荐这样做。</li>
+</ul>
+<h3 id="注释"><a class="markdownIt-Anchor" href="#注释"></a> 注释</h3>
+<p>ECMAScript使用C风格注释，包括单行注释和块状注释。<br />
+（推荐使用单行注释，不清楚为什么的，我在评论区等你。）</p>
+<h3 id="严格模式"><a class="markdownIt-Anchor" href="#严格模式"></a> 严格模式</h3>
+<p>ECMAScript5引入了严格模式的概念，严格模式是为JavaScript定义了一种不同的解析和执行模型。严格模式下，ECMAScript3中一些不确定的行为将得到处理，而且对某些不安全的操作会抛出错误。<br />
+要启用严格模式，需要在顶部加入如下代码：<br />
+<code>use strict;</code><br />
+其本质是一个编译指示，用于告诉JavaScript引擎切换到严格模式。</p>
+<h3 id="语句"><a class="markdownIt-Anchor" href="#语句"></a> 语句</h3>
+<p>ECMAScript中的语句以分号结尾;<strong>如果省略分号，则由解析器确定语句结尾</strong><br />
+强烈建议每条语句以分号结尾，这样做的好处：</p>
+<ul>
+<li>增进代码性能。</li>
+<li>避免很多错误（例如不完整的输入）。</li>
+<li>开发人员可以放心大胆的压缩代码。</li>
+</ul>
+<h2 id="二-关键字和保留字"><a class="markdownIt-Anchor" href="#二-关键字和保留字"></a> 二、关键字和保留字</h2>
+<p>关键字，用于表示控制语句的开始或结束，或执行特定操作，不能用于标识符。<br />
+ECMAScript5全部关键字如下：</p>
+<table>
+<thead>
+<tr>
+<th>break</th>
+<th>do</th>
+<th>instanceof</th>
+<th>typeof</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>case</td>
+<td>else</td>
+<td>new</td>
+<td>var</td>
+</tr>
+<tr>
+<td>catch</td>
+<td>finally</td>
+<td>return</td>
+<td>void</td>
+</tr>
+<tr>
+<td>continue</td>
+<td>for</td>
+<td>switch</td>
+<td>while</td>
+</tr>
+<tr>
+<td>debugger</td>
+<td>function</td>
+<td>this</td>
+<td>with</td>
+</tr>
+<tr>
+<td>default</td>
+<td>if</td>
+<td>throw</td>
+<td>delete</td>
+</tr>
+<tr>
+<td>in</td>
+<td>try</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>保留字，关键字备胎，暂无特定用途，未来可能会升级为关键字。</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>ECMAScript3全部保留字如下：</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>abstract</td>
+<td>enum</td>
+<td>int</td>
+<td>short</td>
+</tr>
+<tr>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td>boolean</td>
+<td>export</td>
+<td>interface</td>
+<td>static</td>
+</tr>
+<tr>
+<td>byte</td>
+<td>extends</td>
+<td>long</td>
+<td>super</td>
+</tr>
+<tr>
+<td>char</td>
+<td>final</td>
+<td>native</td>
+<td>synchronized</td>
+</tr>
+<tr>
+<td>class</td>
+<td>float</td>
+<td>package</td>
+<td>throws</td>
+</tr>
+<tr>
+<td>debugger</td>
+<td>implements</td>
+<td>protected</td>
+<td>volatile</td>
+</tr>
+<tr>
+<td>double</td>
+<td>import</td>
+<td>public</td>
+<td></td>
+</tr>
+<tr>
+<td>ECMAScript5把非严格模式下运行的保留字缩减为下列这些：</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>class</td>
+<td>enum</td>
+<td>extends</td>
+<td>super</td>
+</tr>
+<tr>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td>const</td>
+<td>export</td>
+<td>import</td>
+<td></td>
+</tr>
+<tr>
+<td>在严格模式下，ECMAScript5对以下保留字施加了限制：</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>implements</td>
+<td>package</td>
+<td>public</td>
+<td>interface</td>
+</tr>
+<tr>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+</tr>
+<tr>
+<td>private</td>
+<td>static</td>
+<td>let</td>
+<td>protected</td>
+</tr>
+<tr>
+<td>yield</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>不要使用保留字和关键字作为标识符！</strong></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="三-变量"><a class="markdownIt-Anchor" href="#三-变量"></a> 三、变量</h2>
+<ul>
+<li><strong>ECMAScript的变量是松散类型的，即可以用来保存任何类型的变量。定义变量时，要使用<code>var</code>操作符。</strong></li>
+<li><strong>定义一个未初始化的变量，该变量会保存一个特殊的值<code>undefined</code>。</strong></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var tmp1;    //tmp1=undefined</span><br></pre></td></tr></table></figure>
+<ul>
+<li>使用<code>var</code>操作符定义的变量将成为该变量作用域中的局部变量。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">function test()&#123;</span><br><span class="line">  var message = &quot;hi&quot;;</span><br><span class="line">&#125;</span><br><span class="line">test();</span><br><span class="line">alert(message);  //ReferenceError: message not defined.</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>省略<code>var</code>操作符，会创建一个全局变量。</strong></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">funcrion test()&#123;</span><br><span class="line">  message = &quot;hi&quot;;</span><br><span class="line">&#125;</span><br><span class="line">test();</span><br><span class="line">alert(message);  // hi</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>在严格模式下，不能定义名为<code>eval</code>或<code>arguments</code>的变量，否则会导致语法错误。</strong></li>
+</ul>
+<h2 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h2>
+<p>本文总结分为如下三大部分，以下总结不知道原理的，评论区见。</p>
+<h3 id="与cjava不同之处"><a class="markdownIt-Anchor" href="#与cjava不同之处"></a> 与C++/Java不同之处</h3>
+<ul>
+<li>标识符可以用美元符号($)为开头。</li>
+<li>语句末尾可以省略分号，如果省略分号，则由解析器决定句尾。</li>
+<li>变量是松散类型的。</li>
+<li>定义变量前使用<code>var</code>操作符，带<code>var</code>的变量是局部变量，反之为全局变量。</li>
+<li>定义一个未初始化的变量，其值为<code>undefined</code>。</li>
+</ul>
+<h3 id="严格模式-2"><a class="markdownIt-Anchor" href="#严格模式-2"></a> 严格模式</h3>
+<ul>
+<li>在严格模式下，对保留字增加了限制。</li>
+<li>在严格模式下，不能定义名为<code>eval</code>或<code>arguments</code>的变量，否则会导致语法错误。</li>
+</ul>
+<h3 id="effective小技巧"><a class="markdownIt-Anchor" href="#effective小技巧"></a> Effective小技巧</h3>
+<ul>
+<li>强烈建议，使用单行注释。（为什么？）</li>
+<li>强烈建议，每条语句都以分号结尾。（为什么？）</li>
+</ul>
+</div><div class="tags"></div><div class="post-nav"><a class="pre" href="/p/javascript-advance-study-4/">JavaScript提升系列（四）：数据类型</a><a class="next" href="/p/javascript-advance-study-2/">JavaScript提升系列（二）：JavaScript简介</a></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><div class="author-info"><a class="info-avatar" href="/about-me/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>stay hungry, stay foolish</p><a class="info-icon" href="https://twitter.com/gaoxiaodiao" title="Twitter" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:admin@domain.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/gaoxiaodiao" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/tags/linux%E5%BC%80%E5%8F%91/" style="font-size: 15px;">linux开发</a> <a href="/tags/mac%E5%BC%80%E5%8F%91/" style="font-size: 15px;">mac开发</a> <a href="/tags/%E5%B7%A5%E6%AC%B2%E5%96%84%E5%85%B6%E4%BA%8B-%E5%BF%85%E5%85%88%E5%88%A9%E5%85%B6%E5%99%A8/" style="font-size: 15px;">工欲善其事,必先利其器</a> <a href="/tags/%E9%80%86%E5%90%91-%E7%A0%B4%E8%A7%A3/" style="font-size: 15px;">逆向&破解</a> <a href="/tags/%E7%AC%AC%E4%B8%89%E6%96%B9%E5%BA%93%E7%BC%96%E8%AF%91/" style="font-size: 15px;">第三方库编译</a> <a href="/tags/%E5%BC%80%E5%8F%91-%E4%BB%A3%E7%A0%81/" style="font-size: 15px;">开发&代码</a> <a href="/tags/%E7%AC%94%E8%AE%B0/" style="font-size: 15px;">笔记</a> <a href="/tags/%E5%A4%AA%E7%9B%91/" style="font-size: 15px;">太监</a> <a href="/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E9%99%A4-%E4%BF%AE%E5%A4%8D/" style="font-size: 15px;">故障排除/修复</a> <a href="/tags/%E5%BF%83%E8%B7%AF%E5%8E%86%E7%A8%8B/" style="font-size: 15px;">心路历程</a> <a href="/tags/%E5%A5%87%E6%8A%80%E6%B7%AB%E5%B7%A7/" style="font-size: 15px;">奇技淫巧</a> <a href="/tags/%E5%89%AF%E4%B8%9A%E6%8E%A2%E7%B4%A2/" style="font-size: 15px;">副业探索</a> <a href="/tags/CTF/" style="font-size: 15px;">CTF</a> <a href="/tags/ChatGPT%E6%97%A0%E6%B3%95%E5%81%9A%E5%88%B0%E7%9A%84%E4%BA%8B%E6%83%85/" style="font-size: 15px;">ChatGPT无法做到的事情</a> <a href="/tags/Foundry/" style="font-size: 15px;">Foundry</a> <a href="/tags/%E5%8E%9F%E5%A7%8B%E7%9F%A5%E8%AF%86%E7%A7%AF%E7%B4%AF/" style="font-size: 15px;">原始知识积累</a> <a href="/tags/PowerShell/" style="font-size: 15px;">PowerShell</a> <a href="/tags/htb/" style="font-size: 15px;">htb</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/p/2025-year-end-summary/">2025年年终总结</a></li><li class="post-list-item"><a class="post-list-link" href="/p/lady-luck-is-smiling-2/">幸运女神在微笑（二）</a></li><li class="post-list-item"><a class="post-list-link" href="/p/lady-luck-is-smiling-1/">幸运女神在微笑（一）</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-6/">读书与思考之《第三次浪潮》第六章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-5/">读书与思考之《第三次浪潮》第五章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-modify-registry-by-powershell/">如何通过PowerShell来创建、读取、修改、删除注册表？</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-3_4/">读书与思考之《第三次浪潮》第三、四章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/investment-cryptocurrency-diary-1/">加密货币投资日记（一）：序言</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-use-forge-for-testing-2/">学习Foundry之编写测试代码（二）：标准库与作弊码</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-use-forge-for-testing-1/">学习Foundry之编写测试代码（一）：初识Test合约</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://gaoxiaodiao.com/" title="高小调博客" target="_blank">高小调博客</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2025 <a href="/." rel="nofollow">高小调博客.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.js"></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0"></script><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.css"><script type="text/javascript" src="/js/love.js?v=1.0.0"></script><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

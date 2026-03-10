@@ -1,0 +1,267 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="描述"><title>JavaScript提升系列（五）：操作符 | 高小调博客</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/normalize/latest/normalize.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/pure-min.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/grids-responsive-min.min.css"><link rel="stylesheet" href="//lib.baomitu.com/font-awesome/4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//lib.baomitu.com/jquery/latest/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><script type="text/javascript" src="//lib.baomitu.com/clipboard.js/latest/clipboard.min.js"></script><script type="text/javascript" src="//lib.baomitu.com/toastr.js/latest/toastr.min.js"></script><link rel="stylesheet" href="//lib.baomitu.com/toastr.js/latest/toastr.min.css"><meta name="generator" content="Hexo 8.1.1"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">JavaScript提升系列（五）：操作符</h1><a id="logo" href="/.">高小调博客</a><p class="description">人生，不止代码</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> 首页</i></a><a href="/about-me/"><i class="fa fa-user"> 关于</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">JavaScript提升系列（五）：操作符</h1><div class="post-meta">2020-05-10</div><div class="post-content"><h2 id="操作符"><a class="markdownIt-Anchor" href="#操作符"></a> 操作符</h2>
+<p>ECMA-262描述了一组用于操作数据值的操作符，包括算数操作符，位操作符，关系操作符和相等操作符。</p>
+<h3 id="一元操作符"><a class="markdownIt-Anchor" href="#一元操作符"></a> 一元操作符</h3>
+<p>只能操作一个值的操作符叫做一元操作符。</p>
+<h4 id="递增和递减"><a class="markdownIt-Anchor" href="#递增和递减"></a> 递增和递减</h4>
+<p>递增和递减操作符借鉴于C语言，而且各有两个版本：前置型和后置型。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">var age1 = 29;</span><br><span class="line">var nextAge1 = ++age1;    //nextAge=30，age = 30，前置递减型。</span><br><span class="line">var age2 = 29;</span><br><span class="line">var nextAge2 = age2++;    //nextAge=29，age = 30，后置递减型。</span><br><span class="line"></span><br><span class="line">var age3 = 29;</span><br><span class="line">var prevAge3 = --age3;    //prevAge = 28，age = 28，前置递减。</span><br><span class="line">var age4 = 29;</span><br><span class="line">var prevAge4 = age3--;    //prevAge = 29，age = 28，后置递减。</span><br></pre></td></tr></table></figure>
+<p><strong>所有这4个操作符对任何值都适用</strong>，也就是它们不仅适用于整数，还可以用字符串，布尔值，浮点数和对象。</p>
+<p>在应用不同值时，递增和递减操作符遵循以下规则：</p>
+<ul>
+<li>应用于包含有效数字字符的字符串时，先将其转换为数字值，再执行递增或递减操作。字符串变量变成数值变量。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">var str = &quot;1234&quot;;</span><br><span class="line">var ret = ++str1;      // ret = 1235，str = 1235，str也收到副作用影响，变成整数。</span><br><span class="line"></span><br><span class="line">var str = &quot;&quot;;</span><br><span class="line">var ret = ++str;     // ret = 1, str = 1。</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<ul>
+<li>应用于不包含有效数字字符的字符串时，将变量的值设置为NaN。字符串变量变成数值变量。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var str2 = &quot;1234abcd&quot;;</span><br><span class="line">var ret2 = ++str2;      // ret2 = NaN，str2 = NaN，str2一开始是无效字符</span><br></pre></td></tr></table></figure>
+<ul>
+<li>应用于布尔值<code>false</code>时，先将其转换为0，再执行加减1操作，布尔值变量变成数值变量。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var b = false;</span><br><span class="line">++b;          //b = 1</span><br></pre></td></tr></table></figure>
+<ul>
+<li>应用于布尔值<code>ture</code>时，先将其转换为1，再执行加减1操作，布尔值变量变成数值变量。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var b = true;</span><br><span class="line">++b;      //b = 2</span><br></pre></td></tr></table></figure>
+<ul>
+<li>应用于浮点数值时，执行加减1操作。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var f = 1.1;</span><br><span class="line">++f;    //f = 2.1</span><br></pre></td></tr></table></figure>
+<ul>
+<li>应用于对象时，先调用<code>valueOf()</code>方法以取得一个可供操作的值，然后对该值应用前述规则。如果结果是<code>NaN</code>，则在调用<code>toString()</code>方法后再应用前述规则。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">var  o = &#123;</span><br><span class="line">  valueOf:function()&#123;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">alert(++o);    // 0</span><br></pre></td></tr></table></figure>
+<h3 id="一元加和减操作符"><a class="markdownIt-Anchor" href="#一元加和减操作符"></a> 一元加和减操作符</h3>
+<p>一元加操作符以加号（+）表示，表示正数，放在数值前面，不会对数值产生任何影响。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var num = 25;</span><br><span class="line">num = +num;        //num 仍然是25</span><br></pre></td></tr></table></figure>
+<p>在对非数值应用一元加操作符时，该操作符会像<code>Number()</code>转型函数一样对这个值执行转换。<br />
+布尔值<code>false</code>和<code>true</code>将被转换为<code>0</code>和<code>1</code>，字符串值会被按照特殊的规则进行解析，对象是先调用它们的<code>valueOf()</code>方法和（或）<code>toString()</code>方法，再转换得到的值。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">var s1 = &quot;01&quot;;</span><br><span class="line">var s2 = &quot;1.1&quot;;</span><br><span class="line">var s3 = &quot;z&quot;;</span><br><span class="line">var b = false;</span><br><span class="line">var f = 1.1;</span><br><span class="line">var o = &#123;</span><br><span class="line">  valueOf:function()&#123;</span><br><span class="line">    return -1;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">var num1 = +s1;     // num1 = 1, s1 = &quot;01&quot;</span><br><span class="line">var num2 = +s2;    // num2 = 1.1， s2 = &quot;1.1&quot;</span><br><span class="line">var num3 = +s3;    // num3 = NaN;</span><br><span class="line">var num4 = +b;      // num4 = 0</span><br><span class="line">var num5 = +f;       // num5 = 1.1;</span><br><span class="line">var num6 = +o;      // num6 = -1;</span><br></pre></td></tr></table></figure>
+<p>一元减操作符以减号（-）表示，主要用于表示负数，下例演示了这个简单的转换过程：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var num1 = 25;</span><br><span class="line">var num2 = -num1;      //num2 = -25, num1 = 25</span><br></pre></td></tr></table></figure>
+<p>一元减操作数应用于非数值时，遵循与一元加操作符相同的规则，最终将结果转换为负数。</p>
+<h3 id="位操作符"><a class="markdownIt-Anchor" href="#位操作符"></a> 位操作符</h3>
+<p>在ECMAScript中，当对数值应用位操作符时，后台会发生如下转换过程：64位的数值被转换为32位数值，然后执行位操作，最后再将32位数值转换为64位数值。<br />
+这个转换过程导致严重的副效应，<strong>对特殊的<code>NaN</code>和<code>Infinity</code>值应用<code>位操作</code>时，这里两个值都会被当成<code>0</code>来处理。</strong></p>
+<p>各种位操作符的执行过程就不具体展开讨论了，在这里总结以下位操作符都有以下：</p>
+<ul>
+<li>按位与<code>&amp;</code></li>
+<li>按位取反<code>~</code></li>
+<li>按位或<code>|</code></li>
+<li>异或<code>^</code></li>
+<li>左移<code>&lt;&lt;</code></li>
+<li>右移<code>&gt;&gt;</code></li>
+</ul>
+<h3 id="布尔操作符"><a class="markdownIt-Anchor" href="#布尔操作符"></a> 布尔操作符</h3>
+<p>布尔操作符一共有3个：与、或、非，都可以应用于ECMAScript中的任何值。</p>
+<h4 id="逻辑与"><a class="markdownIt-Anchor" href="#逻辑与"></a> 逻辑与</h4>
+<p>逻辑与由两个和号（&amp;&amp;）表示，有两个操作数，例子如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var result = true &amp;&amp; false;</span><br></pre></td></tr></table></figure>
+<p>真值表如下：</p>
+<table>
+<thead>
+<tr>
+<th>第一个操作符</th>
+<th>第二个操作符</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>true</td>
+<td>true</td>
+<td>true</td>
+</tr>
+<tr>
+<td>true</td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td>false</td>
+<td>true</td>
+<td>false</td>
+</tr>
+<tr>
+<td>false</td>
+<td>false</td>
+<td>false</td>
+</tr>
+<tr>
+<td>**逻辑与操作符可以应用于任何类型的操作数，**而不仅仅是布尔值，其遵循以下规则：</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>第一个操作数是对象，返回第二个操作数。</li>
+<li>如果第二个操作数是对象，则只有第一个操作数的求值结果为<code>true</code>的情况下返回该对象。</li>
+<li>如果两个操作数都是对象，则返回第二个对象。</li>
+<li>任意操作数为<code>null</code>，返回<code>null</code>。</li>
+<li>任意操作数为<code>undefined</code>，则返回<code>undefined</code>。</li>
+<li>任意操作数为<code>NaN</code>，则返回<code>NaN</code>。<br />
+逻辑与操作属于短路操作，如果第一个操作数能够决定结果，那么就不会再对第二个操作数求值。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">var found = true;</span><br><span class="line">var result = (found &amp;&amp; someUndefinedVariable);  //发生错误，Reference Error。</span><br><span class="line">alert(found);      //不会执行</span><br></pre></td></tr></table></figure>
+<p>如果像下面这个例子一样，将<code>found</code>的值设置为false,就不会发生错误了。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">var found = false;</span><br><span class="line">var result = (found &amp;&amp; someUndefinedVariable);    //不会发生错误</span><br><span class="line">alert(result);      //输出“false”</span><br></pre></td></tr></table></figure>
+<h3 id="逻辑或"><a class="markdownIt-Anchor" href="#逻辑或"></a> 逻辑或</h3>
+<p>逻辑或操作符由两个竖线符号（||）表示，有两个操作数，其真值表如下：</p>
+<table>
+<thead>
+<tr>
+<th>第一个操作数</th>
+<th>第二个操作数</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ture</td>
+<td>Ture</td>
+<td>True</td>
+</tr>
+<tr>
+<td>Ture</td>
+<td>False</td>
+<td>True</td>
+</tr>
+<tr>
+<td>False</td>
+<td>Ture</td>
+<td>True</td>
+</tr>
+<tr>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+</tr>
+<tr>
+<td>如果有一个操作数不是布尔值，逻辑或也不一定返回布尔值，其遵循的规则如下：</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>如果第一个操作数为对象，则返回第一个操作数。</li>
+<li>如果第一个操作数的求值结果为<code>false</code>，则返回第二个操作数。</li>
+<li>如果两个操作数都是对象，则返回第一个操作数。</li>
+<li>如果两个操作数都是<code>null</code>，则返回<code>null</code>。</li>
+<li>如果两个操作数都是<code>NaN</code>，则返回<code>NaN</code>。</li>
+<li>如果两个操作数都是<code>undefined</code>，则返回<code>undefined</code>。<br />
+与逻辑与一样，逻辑或操作符也是短路操作符，如果第一个操作数的求值结果为<code>true</code>，就不会对第二个操作数求值了。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">var found = true;</span><br><span class="line">var result = (found || someUndefinedVariable);  //不会发生错误</span><br><span class="line">alert(result);    //弹出窗口&quot;true&quot;</span><br></pre></td></tr></table></figure>
+<p>我们可以逻辑或的这一行为来避免为变量赋<code>null</code>值或<code>undefined</code>值。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var myObject = preferredObject || backupObject;</span><br></pre></td></tr></table></figure>
+<p>在这个例子中，变量<code>myObject</code>将被优先赋予<code>preferredObject</code>变量的值，当<code>preferredObject</code>的值为<code>null</code>或<code>undefined</code>时，会将<code>backupObject</code>的值赋给<code>myObject</code>。<br />
+<strong>ECMAScript程序的赋值语句经常会使用这种模式。</strong></p>
+<h3 id="逻辑非"><a class="markdownIt-Anchor" href="#逻辑非"></a> 逻辑非</h3>
+<p>逻辑非操作符由一个叹号（!）开始，无论这个值是什么数据类型，这个操作符都会返回一个布尔值，其规则如下：</p>
+<ul>
+<li>如果操作数是对象，返回<code>false</code>。</li>
+<li>如果操作数是空字符串，返回<code>true</code>。</li>
+<li>如果操作数是非空字符串，返回<code>false</code>。</li>
+<li>如果操作数是数值<code>0</code>，返回<code>true</code>。</li>
+<li>如果操作数是任意非<code>0</code>数值（包括<code>Infinity</code>），返回<code>false</code>。</li>
+<li>如果操作数是<code>null</code>，返回<code>true</code>。</li>
+<li>如果操作数是<code>NaN</code>，返回<code>true</code>。</li>
+<li>如果操作数是<code>undefined</code>，返回<code>true</code>。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">alert(!false);        //true</span><br><span class="line">alert(!&#123;&#125;);              //false</span><br><span class="line">alert(!&quot;blue&quot;);      //false</span><br><span class="line">alert(!&quot;&quot;);            //true</span><br><span class="line">alert(!0);            //true</span><br><span class="line">alert(!NaN);      //true</span><br><span class="line">alert(!null);        //true</span><br><span class="line">alert(!undefined);  //ture</span><br></pre></td></tr></table></figure>
+<p>逻辑非操作符也可以用于将一个值转换为其对应的布尔值，同时使用两个逻辑非操作符最终结果与<code>Boolean()</code>函数返回相同。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">alert(!!&quot;blue&quot;);    //true</span><br><span class="line">alert(!!&quot;&quot;);        //false</span><br><span class="line">alert(!!0);      //false</span><br><span class="line">alert(!!NaN);    //false</span><br></pre></td></tr></table></figure>
+<h2 id="乘性操作符"><a class="markdownIt-Anchor" href="#乘性操作符"></a> 乘性操作符</h2>
+<p>ECMAScript定义了3个乘性操作符：乘法、除法和求模。这些操作符与其他语言的相应操作符类似，只不过操作数为非数值的情况下会执行自动的类型转换。<br />
+如果参与乘性操作符的操作数不是数值，后台会先使用<code>Number()</code>转型函数将其转为数值。<br />
+也就是说，空字符串被当作0，布尔值<code>true</code>将被当作1。</p>
+<h3 id="乘法"><a class="markdownIt-Anchor" href="#乘法"></a> 乘法</h3>
+<p>乘法操作符由星号（*）表示，用于计算两个数值的乘积。例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var result = 34 * 56;</span><br></pre></td></tr></table></figure>
+<p>在处理特殊值的情况下，乘法操作符遵循以下原则：</p>
+<ul>
+<li>如果操作数都是数值，执行常规乘法计算。如果乘积超过了ECMAScript数值的表示范围，则返回<code>Infinity</code>或<code>-Infinity</code>。</li>
+<li>如果有一个操作数是<code>NaN</code>，则结果是<code>NaN</code>。</li>
+<li><code>Infinity</code>与0相乘，结果是<code>NaN</code>。</li>
+<li><code>Infinity</code>与非0数值相乘，结果为<code>Infinity</code>或<code>-Infinity</code>，符号取决于操作数的符号。</li>
+<li>如果是<code>Infinity</code>与<code>Infinity</code>相乘，则结果为<code>Infinity</code>。</li>
+<li>如果有一个操作数不是数值，则在后台调用<code>Number()</code>将其转换为数值，再应用上述规则。</li>
+</ul>
+<h3 id="除法"><a class="markdownIt-Anchor" href="#除法"></a> 除法</h3>
+<p>除法操作符由一个斜线符号<code>/</code>表示，执行第二个操作数除第一个操作数的计算。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var result = 66/11;</span><br></pre></td></tr></table></figure>
+<p>与乘法操作符类似，除法操作符对待特殊值也有特殊的处理规则，规则如下：</p>
+<ul>
+<li>如果操作数都是数值，执行常规的除法计算。如果商超过了ECMAScript数值的表示范围，则返回<code>Infinity</code>或<code>-Infinity</code>。</li>
+<li>有一个操作数是<code>NaN</code>，则结果是<code>NaN</code>。</li>
+<li>如果是<code>Infinity</code>被<code>Infinity</code>除，则结果是<code>NaN</code>。</li>
+<li>如果是<code>0</code>被<code>0</code>除，则结果是<code>NaN</code>。</li>
+<li>如果是非零的有限数被零除，则结果是<code>Infinity</code>或<code>-Infinity</code>，取决于有符号操作数的符号。</li>
+<li>如果是<code>Infinity</code>被任何非零数除，则结果是<code>Infinity</code>或<code>-Infinity</code>，取决于有符号操作数的符号。</li>
+<li>如果有一个操作数不是数值，则在后台调用<code>Number()</code>将其转换为数值，再应用上述规则。</li>
+</ul>
+<h3 id="求模"><a class="markdownIt-Anchor" href="#求模"></a> 求模</h3>
+<p>求模操作符由<code>%</code>表示，用法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var result = 26%5;  //1</span><br></pre></td></tr></table></figure>
+<p>与另外两个乘性操作符类似，求模操作符会遵循以下特殊规则来处理特殊的值：</p>
+<ul>
+<li>如果操作数都是数值，执行常规的除法计算，返回除得的余数。</li>
+<li>如果被除数是无穷大值，除数是有限大值，则结果是<code>NaN</code>。</li>
+<li>如果被除数是有限大数值，除数是0，则结果是<code>NaN</code>。</li>
+<li><code>Infinity</code>被<code>Infinity</code>除，结果是<code>NaN</code>。</li>
+<li>如果被除数是0，则结果是0。</li>
+<li>如果有一个操作数不是数值，则在后台调用<code>Number()</code>将其转换为数值，再应用上述规则。</li>
+</ul>
+<h2 id="加性操作符"><a class="markdownIt-Anchor" href="#加性操作符"></a> 加性操作符</h2>
+<p>加法和减法属于加性操作符，在ECMAScript中，这两个操作符有一系列特殊行为。</p>
+<h3 id="加法"><a class="markdownIt-Anchor" href="#加法"></a> 加法</h3>
+<p>加法操作符用法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var result = 1 + 2;</span><br></pre></td></tr></table></figure>
+<p>如果两个操作符都是数值，执行常规的加法计算，然后根据下列规则返回结果：</p>
+<ul>
+<li>如果有一个操作数是<code>NaN</code>，则结果是<code>NaN</code>。</li>
+<li>如果是<code>Infinity</code>加<code>Infinity</code>，则结果是<code>Infinity</code>。</li>
+<li>如果是<code>-Infinity</code>加<code>-Infinity</code>，则结果是<code>-Infinity</code>。</li>
+<li>如果是<code>Infinity</code>加<code>-Infinity</code>，则结果是<code>NaN</code>。</li>
+<li>如果是<code>+0</code>加<code>+0</code>，则结果是<code>+0</code>。</li>
+<li>如果是<code>-0</code>加<code>-0</code>，则结果是<code>-0</code>。</li>
+<li>如果是<code>+0</code>加<code>-0</code>，则结果是<code>+0</code>。</li>
+<li>如果两个操作数都是字符串，则将第二个操作数与第一个操作数拼接起来。</li>
+<li>如果只有一个操作数是字符串，则将另一个操作数转换为字符串，然后再将两个字符串拼接起来。</li>
+<li>如果有一个操作数是对象、数值或布尔值，则调用它们的<code>toString()</code>方法取得相应的字符串值，然后再应用前面关于字符串的规则。对于<code>undefined</code>和<code>null</code>，则分别调用<code>String()</code>函数并取得字符串<code>&quot;undefined&quot;</code>和<code>&quot;null&quot;</code>。</li>
+</ul>
+<h3 id="减法"><a class="markdownIt-Anchor" href="#减法"></a> 减法</h3>
+<p>减法操作符，是另一个极为常用的操作符，其用法如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var result = 2 - 1;</span><br></pre></td></tr></table></figure>
+<p>与加法操作符类似，ECMAScript中的减法操作符在处理各种类似数据转换时，同样需要遵循一些特殊规则，如下所示：</p>
+<ul>
+<li>两个操作数都是数值，执行常规算术减法操作并返回结果。</li>
+<li>如果有一个操作数是<code>NaN</code>，则结果是<code>NaN</code>。</li>
+<li>如果是<code>Infinity</code>减<code>Infinity</code>，则结果是<code>NaN</code>。</li>
+<li>如果是<code>-Infinity</code>减<code>-Infinity</code>，则结果是<code>NaN</code>。</li>
+<li>如果是<code>Infinity</code>减<code>-Infinity</code>，则结果是<code>Infinity</code>。</li>
+<li>如果是<code>-Infinity</code>减<code>Infinity</code>，则结果是<code>-Infinity</code>。</li>
+<li>如果是<code>+0</code>减<code>+0</code>，则结果是<code>+0</code>。</li>
+<li>如果是<code>+0</code>减<code>-0</code>，则结果是<code>-0</code>。</li>
+</ul>
+<h2 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h2>
+<ul>
+<li>
+<p><code>NaN</code>在逻辑运算符中相当于<code>false</code>，在位运算中相当于<code>0</code>，其余运算结果均为<code>NaN</code>。</p>
+</li>
+<li>
+<p>逻辑非可以把任意类型转换为<code>true</code>或<code>false</code>。</p>
+</li>
+<li>
+<p>逻辑与和逻辑或的运算结果可能为<code>Object</code>、<code>undefined</code>、<code>null</code>、<code>NaN</code>、<code>true</code>、<code>false</code>。</p>
+</li>
+<li></li>
+<li></li>
+</ul>
+<h3 id="与cjava不同之处"><a class="markdownIt-Anchor" href="#与cjava不同之处"></a> 与C++/Java不同之处</h3>
+<ul>
+<li>JavaScript可以对任何类型的值进行自增，自减，相加，相减的操作。</li>
+</ul>
+</div><div class="tags"></div><div class="post-nav"><a class="pre" href="/p/javascript-advance-study-6/">JavaScript提升系列（六）：语句</a><a class="next" href="/p/javascript-advance-study-4/">JavaScript提升系列（四）：数据类型</a></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><div class="author-info"><a class="info-avatar" href="/about-me/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>stay hungry, stay foolish</p><a class="info-icon" href="https://twitter.com/gaoxiaodiao" title="Twitter" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:admin@domain.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/gaoxiaodiao" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/tags/linux%E5%BC%80%E5%8F%91/" style="font-size: 15px;">linux开发</a> <a href="/tags/mac%E5%BC%80%E5%8F%91/" style="font-size: 15px;">mac开发</a> <a href="/tags/%E5%B7%A5%E6%AC%B2%E5%96%84%E5%85%B6%E4%BA%8B-%E5%BF%85%E5%85%88%E5%88%A9%E5%85%B6%E5%99%A8/" style="font-size: 15px;">工欲善其事,必先利其器</a> <a href="/tags/%E9%80%86%E5%90%91-%E7%A0%B4%E8%A7%A3/" style="font-size: 15px;">逆向&破解</a> <a href="/tags/%E7%AC%AC%E4%B8%89%E6%96%B9%E5%BA%93%E7%BC%96%E8%AF%91/" style="font-size: 15px;">第三方库编译</a> <a href="/tags/%E5%BC%80%E5%8F%91-%E4%BB%A3%E7%A0%81/" style="font-size: 15px;">开发&代码</a> <a href="/tags/%E7%AC%94%E8%AE%B0/" style="font-size: 15px;">笔记</a> <a href="/tags/%E5%A4%AA%E7%9B%91/" style="font-size: 15px;">太监</a> <a href="/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E9%99%A4-%E4%BF%AE%E5%A4%8D/" style="font-size: 15px;">故障排除/修复</a> <a href="/tags/%E5%BF%83%E8%B7%AF%E5%8E%86%E7%A8%8B/" style="font-size: 15px;">心路历程</a> <a href="/tags/%E5%A5%87%E6%8A%80%E6%B7%AB%E5%B7%A7/" style="font-size: 15px;">奇技淫巧</a> <a href="/tags/%E5%89%AF%E4%B8%9A%E6%8E%A2%E7%B4%A2/" style="font-size: 15px;">副业探索</a> <a href="/tags/CTF/" style="font-size: 15px;">CTF</a> <a href="/tags/ChatGPT%E6%97%A0%E6%B3%95%E5%81%9A%E5%88%B0%E7%9A%84%E4%BA%8B%E6%83%85/" style="font-size: 15px;">ChatGPT无法做到的事情</a> <a href="/tags/Foundry/" style="font-size: 15px;">Foundry</a> <a href="/tags/%E5%8E%9F%E5%A7%8B%E7%9F%A5%E8%AF%86%E7%A7%AF%E7%B4%AF/" style="font-size: 15px;">原始知识积累</a> <a href="/tags/PowerShell/" style="font-size: 15px;">PowerShell</a> <a href="/tags/htb/" style="font-size: 15px;">htb</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/p/2025-year-end-summary/">2025年年终总结</a></li><li class="post-list-item"><a class="post-list-link" href="/p/lady-luck-is-smiling-2/">幸运女神在微笑（二）</a></li><li class="post-list-item"><a class="post-list-link" href="/p/lady-luck-is-smiling-1/">幸运女神在微笑（一）</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-6/">读书与思考之《第三次浪潮》第六章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-5/">读书与思考之《第三次浪潮》第五章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-modify-registry-by-powershell/">如何通过PowerShell来创建、读取、修改、删除注册表？</a></li><li class="post-list-item"><a class="post-list-link" href="/p/the-third-wave-reading-notes-3_4/">读书与思考之《第三次浪潮》第三、四章</a></li><li class="post-list-item"><a class="post-list-link" href="/p/investment-cryptocurrency-diary-1/">加密货币投资日记（一）：序言</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-use-forge-for-testing-2/">学习Foundry之编写测试代码（二）：标准库与作弊码</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-use-forge-for-testing-1/">学习Foundry之编写测试代码（一）：初识Test合约</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://gaoxiaodiao.com/" title="高小调博客" target="_blank">高小调博客</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2025 <a href="/." rel="nofollow">高小调博客.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.js"></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0"></script><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.css"><script type="text/javascript" src="/js/love.js?v=1.0.0"></script><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>
