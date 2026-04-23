@@ -507,6 +507,27 @@ div {
 .post-archive .date {
   padding-right: 0.7em;
 }
+.post-archive .homepage-older-posts[hidden] {
+  display: none;
+}
+.post-archive .homepage-load-more {
+  margin: 1.2em 0 0;
+  text-align: center;
+}
+.post-archive .homepage-load-more button {
+  padding: 6px 18px;
+  color: #6E7173;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  line-height: 1.6;
+}
+.post-archive .homepage-load-more button:hover, .post-archive .homepage-load-more button:focus {
+  color: #444;
+  background: #F8F8F8;
+  border-bottom-color: #D26911;
+}
 
 /* for archive page ends*/
 /* middle*/
