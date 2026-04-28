@@ -48,6 +48,14 @@
 <p><img src="/images/2026-04-28-15-21-37.png" alt="" /></p>
 <p>卧槽，天塌了！！！</p>
 <p>每个文件夹下，都多了一个AGENTS.md和README.md。</p>
+<h2 id="翻车案例三简单任务无限迭代"><a class="markdownIt-Anchor" href="#翻车案例三简单任务无限迭代"></a> 翻车案例三：简单任务无限迭代</h2>
+<p>为了测试这个场景，我进行了如下prompt:</p>
+<figure class="highlight plaintext" data-language="plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs plaintext" data-language="plaintext">请你使用python写一个快速排序算法<br></code></pre></td></tr></table></figure>
+<p>没有设置终止条件的情况下，跑了5个小时：<br />
+<img src="/images/2026-04-28-19-12-33.png" alt="" /></p>
+<p>一共就写了两个文件，其中核心代码243行，测试代码2298行：<br />
+<img src="/images/2026-04-28-19-14-58.png" alt="" /></p>
+<p>把日本的工匠精神发挥到了极致，牛逼！！！</p>
 <h2 id="gnhf不足"><a class="markdownIt-Anchor" href="#gnhf不足"></a> gnhf不足</h2>
 <ul>
 <li>1、默认情况下，任务会无限迭代运行下去，即使它是一个很简单的任务，所以使用时最好带上类似<code>--max-iterations</code>参数</li>
