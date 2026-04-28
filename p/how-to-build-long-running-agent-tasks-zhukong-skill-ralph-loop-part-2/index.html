@@ -28,7 +28,7 @@
 <p>我的评价：</p>
 <p>虽然prompt没有经过优化，但整体效果还是不错的，把很多重复代码都重构的很好，比较差强人意的点在于，会存在过度优化的问题。</p>
 <p>整体运行的效果和我敲shell命令跑<code>while</code>循环去调用codex是一样的。</p>
-<h2 id="翻车案例与主控结合task_id与step发生漂移"><a class="markdownIt-Anchor" href="#翻车案例与主控结合task_id与step发生漂移"></a> 翻车案例：与主控结合，task_id与step发生漂移</h2>
+<h2 id="翻车案例一与主控结合task_id与step发生漂移"><a class="markdownIt-Anchor" href="#翻车案例一与主控结合task_id与step发生漂移"></a> 翻车案例一：与主控结合，task_id与step发生漂移</h2>
 <p>当我尝试与<code>zhukong skill</code>结合时，意外发生了，<code>ghnf</code>从架构层面不支持这样做。</p>
 <p>prompt：</p>
 <figure class="highlight plaintext" data-language="plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs plaintext" data-language="plaintext">&lt;task_description_prompt&gt;<br>请你使用主控模式来做这一点，保持task_ID不变，每一轮都是一个step。&quot;<br></code></pre></td></tr></table></figure>
@@ -41,6 +41,13 @@
 <p>解决方案：</p>
 <p>显式指定task_id与step_id，如以下prompt：</p>
 <figure class="highlight plaintext" data-language="plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs plaintext" data-language="plaintext">&lt;task_description_prompt&gt;<br>请你使用主控模式来做这一点，固定使用当前 `.gnhf/runs/&lt;runId&gt;` 中的 `&lt;runId&gt;`为task_id和run_id，每一轮迭代都是一个step，请从当前提示中的 `This is iteration N` 读取轮次 N，并使用 `step_id = S&lt;N&gt;`<br></code></pre></td></tr></table></figure>
+<h2 id="翻车案例二补充readme文档"><a class="markdownIt-Anchor" href="#翻车案例二补充readme文档"></a> 翻车案例二：补充README文档</h2>
+<p>睡觉前，我下了如下prompt:</p>
+<figure class="highlight plaintext" data-language="plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs plaintext" data-language="plaintext">完善每个模块的README.md以及AGENTS.md、更正错误/漂移文档内容<br></code></pre></td></tr></table></figure>
+<p>睡醒看到：</p>
+<p><img src="/images/2026-04-28-15-21-37.png" alt="" /></p>
+<p>卧槽，天塌了！！！</p>
+<p>每个文件夹下，都多了一个AGENTS.md和README.md。</p>
 <h2 id="gnhf不足"><a class="markdownIt-Anchor" href="#gnhf不足"></a> gnhf不足</h2>
 <ul>
 <li>1、默认情况下，任务会无限迭代运行下去，即使它是一个很简单的任务，所以使用时最好带上类似<code>--max-iterations</code>参数</li>
