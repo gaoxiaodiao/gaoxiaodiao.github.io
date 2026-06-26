@@ -8,6 +8,39 @@
     return;
   }
 
+  function cleanPasswordValue(value) {
+    return String(value).trim();
+  }
+
+  function cleanPasswordInput() {
+    var input = document.getElementById('hbePass');
+
+    if (!input) {
+      return;
+    }
+
+    var cleanValue = cleanPasswordValue(input.value);
+
+    if (input.value !== cleanValue) {
+      input.value = cleanValue;
+    }
+  }
+
+  container.addEventListener('keydown', function (event) {
+    if (event.isComposing || event.key === 'Enter' || event.keyCode === 13) {
+      cleanPasswordInput();
+    }
+  }, true);
+
+  container.addEventListener('paste', function () {
+    window.setTimeout(cleanPasswordInput, 0);
+  }, true);
+
+  var passwordInput = document.getElementById('hbePass');
+  if (passwordInput) {
+    passwordInput.addEventListener('blur', cleanPasswordInput);
+  }
+
   var rawScope = container.getAttribute('data-hbe-scope') || ('post:' + window.location.pathname);
   var scopedStorageName = 'hexo-blog-encrypt:' + rawScope;
   var postStorageName = 'hexo-blog-encrypt:#' + window.location.pathname;
