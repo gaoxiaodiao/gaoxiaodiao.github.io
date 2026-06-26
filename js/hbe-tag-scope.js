@@ -52,7 +52,7 @@
   var scopedData = storage.getItem(scopedStorageName);
   var postData = storage.getItem(postStorageName);
 
-  if (scopedData && !postData) {
+  if (scopedData && scopedData !== postData) {
     storage.setItem(postStorageName, scopedData);
   } else if (postData && !scopedData && rawScope.indexOf('tag:') === 0) {
     storage.setItem(scopedStorageName, postData);
@@ -68,6 +68,7 @@
   window.__hbeTagScopeStoragePatched = true;
 
   var originalSetItem = Storage.prototype.setItem;
+  var originalGetItem = Storage.prototype.getItem;
   var originalRemoveItem = Storage.prototype.removeItem;
 
   Storage.prototype.setItem = function (key, value) {
@@ -82,10 +83,16 @@
   };
 
   Storage.prototype.removeItem = function (key) {
+    var value = this === window.localStorage ? originalGetItem.call(this, key) : null;
     var result = originalRemoveItem.apply(this, arguments);
     var aliases = window.__hbeStorageAliases || {};
 
-    if (this === window.localStorage && aliases[key] && aliases[key] !== key) {
+    if (
+      this === window.localStorage &&
+      aliases[key] &&
+      aliases[key] !== key &&
+      originalGetItem.call(this, aliases[key]) === value
+    ) {
       originalRemoveItem.call(this, aliases[key]);
     }
 
