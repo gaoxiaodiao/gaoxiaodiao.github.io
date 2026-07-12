@@ -1,0 +1,145 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="描述"><title>[AI辅助创作] Vestigra开发日记（一）：从macOS黑匣子到行为保护 | 高小调博客</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/normalize/latest/normalize.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/pure-min.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/grids-responsive-min.min.css"><link rel="stylesheet" href="//lib.baomitu.com/font-awesome/4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//lib.baomitu.com/jquery/latest/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><script type="text/javascript" src="//lib.baomitu.com/clipboard.js/latest/clipboard.min.js"></script><script type="text/javascript" src="//lib.baomitu.com/toastr.js/latest/toastr.min.js"></script><link rel="stylesheet" href="//lib.baomitu.com/toastr.js/latest/toastr.min.css"><meta name="generator" content="Hexo 8.1.1"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">[AI辅助创作] Vestigra开发日记（一）：从macOS黑匣子到行为保护</h1><a id="logo" href="/.">高小调博客</a><p class="description">人生，不止代码</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> 首页</i></a><a href="/about-me/"><i class="fa fa-user"> 关于</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">[AI辅助创作] Vestigra开发日记（一）：从macOS黑匣子到行为保护</h1><div class="post-meta">2026-07-13</div><div class="post-content"><h2 id="前言真正让我改定位的是我自己写的一段脚本"><a class="markdownIt-Anchor" href="#前言真正让我改定位的是我自己写的一段脚本"></a> 前言：真正让我改定位的，是我自己写的一段脚本</h2>
+<p>我自己写过一个导出 Chrome 密码和 Cookie 的脚本。</p>
+<p>脚本并不复杂，也没有长得像传统意义上的木马。它只是调用系统里已有的能力，读取 Chrome Safe Storage，再去碰 Chrome 用户数据目录里的 Cookie、Login Data 等数据库。</p>
+<p>但就是这么一个普通脚本，很多面向普通用户的杀毒软件很难稳定识别。</p>
+<p>这件事有点打脸。</p>
+<p>因为那时候的 Vestigra，核心定位还是“macOS 安全黑匣子”。我的想法是先不要急着判断谁是病毒，而是把程序从哪里来、被谁启动、做过什么、有没有建立持久化、后来又碰过哪些敏感目录记录下来。等电脑真的出事以后，至少还能还原现场。</p>
+<p>听上去没毛病。</p>
+<p>但当我真的把密码导出来以后，一个很现实的问题摆在面前：</p>
+<p><strong>如果 Vestigra 只能在事后告诉用户“你的密码是这样被拿走的”，那它到底算不算一款安全产品？</strong></p>
+<p>这篇开发日记，就从这次定位被推翻开始。</p>
+<h2 id="一-一开始我只想解决电脑出事后什么都说不清"><a class="markdownIt-Anchor" href="#一-一开始我只想解决电脑出事后什么都说不清"></a> 一、一开始，我只想解决“电脑出事后什么都说不清”</h2>
+<p>很多安全事件，用户最后只能看到结果：</p>
+<ul>
+<li>加密货币资产没了；</li>
+<li>Token 被窃取了；</li>
+<li>Cookie 被导出了；</li>
+<li>开发者机器遭遇了供应链攻击；</li>
+<li>本地环境已经被污染，但不知道从哪里开始的。</li>
+</ul>
+<p>真正关键的问题反而没人答得出来：</p>
+<ul>
+<li>它是什么时候进来的？</li>
+<li>是谁下载的？</li>
+<li>第一次运行发生在什么时候？</li>
+<li>它怎么建立持久化？</li>
+<li>它什么时候开始读取敏感数据？</li>
+<li>密码最后到底是怎么没的？</li>
+</ul>
+<p>对普通用户来说，整个过程就是一个黑盒。</p>
+<p>所以我最早给 Vestigra 定的目标很克制：先把 macOS 上的关键行为记录下来，再把零散事件串成一条人能看懂、能追溯、也能复核的 Story。</p>
+<p>例如系统底层看到的，可能只是“某个进程写了一个 plist”。但人真正需要看的应该是：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">Codex<br>→ zsh<br>→ 某个脚本<br>→ 写入 LaunchAgent plist<br>→ 注册启动项<br>→ 后续访问敏感目录或发起网络连接<br></code></pre></td></tr></table></figure>
+<p>真实安全问题很少由一个孤立事件构成，它通常是一条链。</p>
+<p>我当时以为，只要把这条链讲清楚，产品价值就成立了。</p>
+<p>后来才发现，我还是想简单了。</p>
+<h2 id="二-底层-event-越多离用户能看懂的真相可能越远"><a class="markdownIt-Anchor" href="#二-底层-event-越多离用户能看懂的真相可能越远"></a> 二、底层 Event 越多，离用户能看懂的真相可能越远</h2>
+<p>macOS Endpoint Security 给出的事件非常细碎。如果只是把事件一股脑存下来，最终很容易得到几万条“技术上都是真的、但人根本看不懂”的日志。</p>
+<p>所以 Vestigra 第一阶段最重要的不是多收日志，而是 Story：</p>
+<ul>
+<li>某个程序从哪里来；</li>
+<li>谁启动了它；</li>
+<li>它什么时候第一次运行；</li>
+<li>它写了哪些持久化配置；</li>
+<li>它后来访问了什么敏感目录；</li>
+<li>哪些节点有直接证据；</li>
+<li>哪些环节没有观察到。</li>
+</ul>
+<p>这时候我又踩进了另一个坑。</p>
+<p>Story 太好读了，好读到它很容易冒充事实。</p>
+<p>于是我不得不给整个系统立下一条后来越来越重要的规矩：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">Ledger 是事实源。<br>Story 是解释。<br>Projection 是缓存。<br>Gap 也是证据的一部分。<br></code></pre></td></tr></table></figure>
+<p>例如“某个程序写了 LaunchAgent”可以是 observed evidence；但“它一定在进行恶意持久化”已经是解释。</p>
+<p>解释当然有价值，否则用户还是看不懂。可解释必须带着证据、上下文和不确定性，不能穿上一件“事实”的外套。</p>
+<p>所以 Vestigra 后来必须明确区分：</p>
+<ul>
+<li>真实观察到的事件；</li>
+<li>基于事件生成的解释；</li>
+<li>从外部导入的信息；</li>
+<li>当前没有覆盖到的区域；</li>
+<li>保护能力已经降级的状态。</li>
+</ul>
+<p>有三句话，我现在几乎把它们当成产品底线：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">Not observed 不等于 did not happen。<br>Rule hit 不等于 malicious。<br>AIProposal 不是 observed evidence。<br></code></pre></td></tr></table></figure>
+<p>我原本想消灭安全黑盒。如果最后又用一段看起来很聪明的 Story，把推断包装成事实，那只是亲手造了另一个黑盒。</p>
+<h2 id="三-只有-story-以后用户还是会追问那你挡住了吗"><a class="markdownIt-Anchor" href="#三-只有-story-以后用户还是会追问那你挡住了吗"></a> 三、只有 Story 以后，用户还是会追问：那你挡住了吗？</h2>
+<p>做了一段时间以后，我开始看 macOS 上面向普通消费者的安全产品，也开始重新想 Vestigra 到底给谁用。</p>
+<p>对开发者、研究者和高阶用户来说，记录、追溯和 Story 已经很有价值。但普通用户的第一反应通常不是“你能不能帮我做事件调查”，而是更直接的一句：</p>
+<p><strong>你有没有保护我？</strong></p>
+<p>这句话直接把最初的定位推翻了一半。</p>
+<p>Vestigra 不能永远只做：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">记录 → 追溯 → Story<br></code></pre></td></tr></table></figure>
+<p>它还得往前走一步：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">记录 → 追溯 → Story → Protection<br></code></pre></td></tr></table></figure>
+<p>但我也不想把它做成一套“发现可疑东西就自动 kill、delete、block，然后宣布世界已经安全”的系统。</p>
+<p>安全产品一旦开始默认执行高风险动作，它不只可能保护用户，也可能破坏用户。</p>
+<p>所以我给 Protection 加了一条边界：默认应该是 Record、Explain、Warn、Suggest Investigation，以及 Product Data Self-Protect。真正高风险的响应，需要明确的策略判断、预览、确认、审计和回滚语义。</p>
+<p>这条路看起来慢，也不够“杀伐果断”。</p>
+<p>但安全软件最不该做的，就是拿用户的机器替自己的自信买单。</p>
+<h2 id="四-chrome-脚本让我从识别坏样本转向保护敏感行为"><a class="markdownIt-Anchor" href="#四-chrome-脚本让我从识别坏样本转向保护敏感行为"></a> 四、Chrome 脚本让我从“识别坏样本”转向“保护敏感行为”</h2>
+<p>Chrome 密码导出脚本真正改变我的地方，是它让我意识到：</p>
+<p><strong>需要保护的不只是某个已知恶意样本，而是一类敏感行为。</strong></p>
+<p>一个程序可能没有病毒特征，也不在任何已知样本库里，但当它开始读取 Chrome Safe Storage、访问 Chrome 用户数据目录、打开 Cookie 或 Login Data 时，这条行为链已经值得警惕。</p>
+<p>理论上，能够访问这些目录的主体应该很有限：</p>
+<ul>
+<li>Chrome 主程序；</li>
+<li>Chrome Helper；</li>
+<li>必要的 updater 或受信组件。</li>
+</ul>
+<p>其它程序来碰这些数据，至少应该被记录、解释和告警；在当前能力确实覆盖、规则也明确的情况下，才考虑受控拦截。</p>
+<p>这件事把 Vestigra 推向了两个概念：Sensitive Authority 和 Behavior Protection。</p>
+<p>Sensitive Authority 不是“为了安全把用户内容全读一遍”，而是围绕高价值资产采集 metadata，回答几个问题：</p>
+<ul>
+<li>谁拥有权限？</li>
+<li>谁触碰了 secrets？</li>
+<li>baseline 有没有发生变化？</li>
+<li>触碰之后又发生了什么？</li>
+<li>哪些地方仍然不确定？</li>
+</ul>
+<p>这些资产可能包括 TCC / FDA 授权、Keychain 或 secret stores、浏览器 secrets / cookies、开发者凭据和云服务 credentials。</p>
+<p>这里我必须反复强调一个边界：</p>
+<p><strong>metadata, not content。</strong></p>
+<p>保护 Chrome 数据，不等于默认读取用户的 Chrome 内容。Vestigra 也不应该默认采集文档正文、聊天记录、邮件正文、网络 payload 或 TLS 明文。</p>
+<h2 id="五-我很快又发现保护-chrome这句话说大了"><a class="markdownIt-Anchor" href="#五-我很快又发现保护-chrome这句话说大了"></a> 五、我很快又发现，“保护 Chrome”这句话说大了</h2>
+<p>产品定位刚想清楚，工程现实马上又泼了一盆冷水。</p>
+<p>macOS Endpoint Security 并没有提供一个“以后每次 read/write 都交给你决定”的魔法开关。以 <code>AUTH_OPEN</code> 为例，它控制的是 open 阶段的 flags，并不代表应用可以持续仲裁文件打开后的每一次 I/O。</p>
+<p>所以“Vestigra 可以保护 Chrome 数据”这句话虽然好懂，但不够准确。</p>
+<p>我最后只能把承诺改得很长：</p>
+<blockquote>
+<p>对当前已支持、已验证、已编译进入 ES AUTH 面的 Chrome 数据访问操作，进行 metadata-only、签名主体 allowlist、domain-separated、可审计的行为保护。</p>
+</blockquote>
+<p>很绕，不像一句好卖的宣传语。</p>
+<p>但这才是当前真实的工程边界。</p>
+<p>每一个进入 enforce rule 的高层 operation，都必须能答出这些问题：</p>
+<ul>
+<li>对应哪个 AUTH event？</li>
+<li>request parser 怎么解析？</li>
+<li>evaluator 根据什么判断？</li>
+<li>response 怎么执行？</li>
+<li>audit 怎么落下？</li>
+<li>runtime degraded 时，用户能不能看见？</li>
+</ul>
+<p>有一环没打通，就不能靠一个漂亮的功能名假装已经保护了。</p>
+<h2 id="六-最后整个系统只能走向-rule-first"><a class="markdownIt-Anchor" href="#六-最后整个系统只能走向-rule-first"></a> 六、最后，整个系统只能走向 Rule First</h2>
+<p>保护能力加进来以后，另一个问题也爆了出来：如果所有逻辑都写死在代码里，系统很快就会失控。</p>
+<p>哪些事件需要采集？哪些行为要生成 Story？哪些目录属于高价值资产？什么情况只记录，什么情况告警，什么情况才允许进入 Response？</p>
+<p>这些判断不能散落在一堆 <code>if</code> 里。</p>
+<p>于是 Vestigra 开始走向 Rule First：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">采集策略 → rule / config<br>解释策略 → story pattern<br>保护策略 → policy / rule<br>响应策略 → ResponseGate<br>验证策略 → replay / gate<br></code></pre></td></tr></table></figure>
+<p>规则也不再只是一个阈值配置，而是产品承诺的表达方式。</p>
+<p>例如 LaunchAgent 相关行为，不应该停在“看到写 plist 就报警”。更完整的链路应该是：规则命中关键行为，生成 <code>RuleEvaluationRecord</code>，保留 match bindings，把它作为 investigation seed，向上追溯来源、向下观察后续行为，再生成 Story；必要时给出 warning 或 investigation suggestion，最后还能导出 case，并在其它环境里 verify / replay。</p>
+<p>到这里，Vestigra 已经不再只是日志收集器，也不只是一个拦截器。它开始变成一个证据驱动的本地安全 runtime。</p>
+<h2 id="目前的结论我仍然不想造另一个黑盒"><a class="markdownIt-Anchor" href="#目前的结论我仍然不想造另一个黑盒"></a> 目前的结论：我仍然不想造另一个黑盒</h2>
+<p>回头看，Vestigra 的第一段演化大概是：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">Event → Story → Evidence → Rule → Protection → 受控响应<br></code></pre></td></tr></table></figure>
+<p>每走一步，前一个阶段都会暴露新的问题：</p>
+<ul>
+<li>只有 Event，用户看不懂；</li>
+<li>只有 Story，用户会问有没有保护；</li>
+<li>有了 Protection，就必须说清能力边界；</li>
+<li>有了 Rule，就必须能审查、导出、回放和验证。</li>
+</ul>
+<p>所以我目前给 Vestigra 的定位是：本地优先、证据中心、规则驱动、AI 辅助、受控响应的 macOS EDR-like runtime。</p>
+<p>这个定位以后可能还会改。毕竟前面已经被自己推翻过一次了。</p>
+<p>但最底层的产品信念暂时没有变：安全产品不应该制造另一个黑盒。它应该老老实实告诉用户，我看到了什么、为什么这么判断、能做什么、不能做什么，以及哪些地方根本没有看到。</p>
+</div><div class="tags"><a href="/tags/独立开发"><i class="fa fa-tag">独立开发</i></a><a href="/tags/mac开发"><i class="fa fa-tag">mac开发</i></a><a href="/tags/架构师之路"><i class="fa fa-tag">架构师之路</i></a><a href="/tags/AI辅助创作"><i class="fa fa-tag">AI辅助创作</i></a></div><div class="post-nav"><a class="pre" href="/p/vestigra-development-diary-2/">[AI辅助创作] Vestigra开发日记（二）：一次失灵的CPU告警，逼我重构Runtime</a><a class="next" href="/p/how-to-build-long-running-agent-tasks-zhukong-skill-ralph-loop-part-3/">如何实现Agent长时间执行任务（三）：GPT Pro工作流</a></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><div class="author-info"><a class="info-avatar" href="/about-me/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>stay hungry, stay foolish</p><a class="info-icon" href="https://twitter.com/gaoxiaodiao" title="Twitter" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:admin@domain.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/gaoxiaodiao" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/tags/%E5%A5%87%E6%8A%80%E6%B7%AB%E5%B7%A7/" style="font-size: 15px;">奇技淫巧</a> <a href="/tags/AI%E9%95%BF%E4%BB%BB%E5%8A%A1/" style="font-size: 15px;">AI长任务</a> <a href="/tags/%E5%85%85%E7%94%B5%E4%BC%9A%E5%91%98%E4%B8%93%E5%B1%9E/" style="font-size: 15px;">充电会员专属</a> <a href="/tags/%E7%8B%AC%E7%AB%8B%E5%BC%80%E5%8F%91/" style="font-size: 15px;">独立开发</a> <a href="/tags/AI%E7%BC%96%E7%A8%8B%E6%B5%81%E6%B0%B4%E7%BA%BF%E7%B3%BB%E5%88%97/" style="font-size: 15px;">AI编程流水线系列</a> <a href="/tags/linux%E5%BC%80%E5%8F%91/" style="font-size: 15px;">linux开发</a> <a href="/tags/mac%E5%BC%80%E5%8F%91/" style="font-size: 15px;">mac开发</a> <a href="/tags/%E5%BF%83%E8%B7%AF%E5%8E%86%E7%A8%8B/" style="font-size: 15px;">心路历程</a> <a href="/tags/%E5%89%AF%E4%B8%9A%E6%8E%A2%E7%B4%A2/" style="font-size: 15px;">副业探索</a> <a href="/tags/CTF/" style="font-size: 15px;">CTF</a> <a href="/tags/ChatGPT%E6%97%A0%E6%B3%95%E5%81%9A%E5%88%B0%E7%9A%84%E4%BA%8B%E6%83%85/" style="font-size: 15px;">ChatGPT无法做到的事情</a> <a href="/tags/%E5%B7%A5%E6%AC%B2%E5%96%84%E5%85%B6%E4%BA%8B-%E5%BF%85%E5%85%88%E5%88%A9%E5%85%B6%E5%99%A8/" style="font-size: 15px;">工欲善其事,必先利其器</a> <a href="/tags/Foundry/" style="font-size: 15px;">Foundry</a> <a href="/tags/PowerShell/" style="font-size: 15px;">PowerShell</a> <a href="/tags/%E5%8E%9F%E5%A7%8B%E7%9F%A5%E8%AF%86%E7%A7%AF%E7%B4%AF/" style="font-size: 15px;">原始知识积累</a> <a href="/tags/%E7%AC%AC%E4%B8%89%E6%96%B9%E5%BA%93%E7%BC%96%E8%AF%91/" style="font-size: 15px;">第三方库编译</a> <a href="/tags/%E9%80%86%E5%90%91-%E7%A0%B4%E8%A7%A3/" style="font-size: 15px;">逆向&破解</a> <a href="/tags/%E7%AC%94%E8%AE%B0/" style="font-size: 15px;">笔记</a> <a href="/tags/%E5%BC%80%E5%8F%91-%E4%BB%A3%E7%A0%81/" style="font-size: 15px;">开发&代码</a> <a href="/tags/%E5%A4%AA%E7%9B%91/" style="font-size: 15px;">太监</a> <a href="/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E9%99%A4-%E4%BF%AE%E5%A4%8D/" style="font-size: 15px;">故障排除/修复</a> <a href="/tags/%E6%9E%B6%E6%9E%84%E5%B8%88%E4%B9%8B%E8%B7%AF/" style="font-size: 15px;">架构师之路</a> <a href="/tags/AI%E8%BE%85%E5%8A%A9%E5%88%9B%E4%BD%9C/" style="font-size: 15px;">AI辅助创作</a> <a href="/tags/%E4%B8%80%E4%BA%BA%E5%85%AC%E5%8F%B8/" style="font-size: 15px;">一人公司</a> <a href="/tags/htb/" style="font-size: 15px;">htb</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-3/">[AI辅助创作] Vestigra开发日记（三）：AI能写代码以后，我开始重做项目管理</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-2/">[AI辅助创作] Vestigra开发日记（二）：一次失灵的CPU告警，逼我重构Runtime</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-1/">[AI辅助创作] Vestigra开发日记（一）：从macOS黑匣子到行为保护</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-build-long-running-agent-tasks-zhukong-skill-ralph-loop-part-3/">如何实现Agent长时间执行任务（三）：GPT Pro工作流</a></li><li class="post-list-item"><a class="post-list-link" href="/p/solo-company-experiment-02/">一人公司生存实验 02：连续撞墙之后，我终于看清了自己的定位</a></li><li class="post-list-item"><a class="post-list-link" href="/p/solo-company-experiment-01/">一人公司生存实验 01：从“把事情做好”，到“证明有人买单”</a></li><li class="post-list-item"><a class="post-list-link" href="/p/life-balance-sheet-from-vacant-rental/">[AI辅助创作]从房东空置半年，到人生其实是一张资产负债表</a></li><li class="post-list-item"><a class="post-list-link" href="/p/inspiration-future-echo-information-universe/">[AI辅助创作]灵感是未来的回声：如果宇宙本质上是信息</a></li><li class="post-list-item"><a class="post-list-link" href="/p/internet-devours-human-agency/">[AI辅助创作]当互联网开始吞噬人的主体性</a></li><li class="post-list-item"><a class="post-list-link" href="/p/organization-management-cybernetics-agent-same-thing/">[AI辅助创作]组织、管理、控制论、Agent：它们其实是一回事</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://gaoxiaodiao.com/" title="高小调博客" target="_blank">高小调博客</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">高小调博客.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.js"></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0"></script><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.css"><script type="text/javascript" src="/js/love.js?v=1.0.0"></script><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>

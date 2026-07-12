@@ -1,0 +1,178 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="描述"><title>[AI辅助创作] Vestigra开发日记（三）：AI能写代码以后，我开始重做项目管理 | 高小调博客</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/normalize/latest/normalize.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/pure-min.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/grids-responsive-min.min.css"><link rel="stylesheet" href="//lib.baomitu.com/font-awesome/4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//lib.baomitu.com/jquery/latest/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><script type="text/javascript" src="//lib.baomitu.com/clipboard.js/latest/clipboard.min.js"></script><script type="text/javascript" src="//lib.baomitu.com/toastr.js/latest/toastr.min.js"></script><link rel="stylesheet" href="//lib.baomitu.com/toastr.js/latest/toastr.min.css"><meta name="generator" content="Hexo 8.1.1"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">[AI辅助创作] Vestigra开发日记（三）：AI能写代码以后，我开始重做项目管理</h1><a id="logo" href="/.">高小调博客</a><p class="description">人生，不止代码</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> 首页</i></a><a href="/about-me/"><i class="fa fa-user"> 关于</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">[AI辅助创作] Vestigra开发日记（三）：AI能写代码以后，我开始重做项目管理</h1><div class="post-meta">2026-07-13</div><div class="post-content"><h2 id="前言最让我不安的不是-ai-写错而是它写得太像完成了"><a class="markdownIt-Anchor" href="#前言最让我不安的不是-ai-写错而是它写得太像完成了"></a> 前言：最让我不安的，不是 AI 写错，而是它写得太像完成了</h2>
+<p>Vestigra 做到后半段，我经常遇到一种很麻烦的状态：</p>
+<ul>
+<li>config 有了；</li>
+<li>model 有了；</li>
+<li>status 有了；</li>
+<li>CLI 有输出；</li>
+<li>test 也是绿的。</li>
+</ul>
+<p>从代码 diff 看，这个功能已经相当完整。换成以前，我大概会觉得可以收工了。</p>
+<p>但放到真实机器上长期运行，再顺着数据往下查，结果可能完全不是那么回事：状态显示 active，Endpoint 的真实订阅却已经退化；字段出现在 plan 里，却从来没有驱动 Runtime；Dashboard 把 unknown 画成了健康；Story 能从 live cache 临时算出来，却没有 durable query 面。</p>
+<p>AI 并不一定是把代码写错了。</p>
+<p>更准确地说，它完成了“看起来应该存在的代码”，但没有证明产品承诺真的成立。</p>
+<p>这比编译错误难处理得多。编译器至少会指着一行代码骂我，假完成只会安安静静地躺在一片绿色里。</p>
+<p>于是我开始重新想一个问题：当 AI 已经可以快速实现大量功能以后，人到底还应该管理什么？</p>
+<p>Vestigra 第三阶段，折腾的已经不只是产品架构，而是整套开发系统。</p>
+<h2 id="一-ai-很会补齐形状但不会自动追问语义是不是真的"><a class="markdownIt-Anchor" href="#一-ai-很会补齐形状但不会自动追问语义是不是真的"></a> 一、AI 很会补齐形状，但不会自动追问语义是不是真的</h2>
+<p>在开发过程中，我开始把一类“人工在真实现场发现”的问题标记成 <code>human</code>。</p>
+<p>这个标签不是拿来吐槽 AI，也不是为了证明人比 AI 高明。它只是描述一类很具体的问题：</p>
+<ul>
+<li>代码能编译；</li>
+<li>单元测试不是完全没覆盖；</li>
+<li>表面状态也没有明显报错；</li>
+<li>但真实运行语义已经不对了。</li>
+</ul>
+<p>例如：</p>
+<ul>
+<li>状态显示 active，实际 Endpoint 订阅已经退化；</li>
+<li>配置字段存在于 plan / status，却没有真正驱动 Runtime；</li>
+<li>Dashboard 把未知权限状态显示成健康；</li>
+<li>Story 来自 bounded live cache，却被展示得像 durable query；</li>
+<li>projection 已经截断，CLI 仍然像正常一样返回结果；</li>
+<li>warning 藏在机器可读输出里，用户根本看不见。</li>
+</ul>
+<p>AI 很擅长根据上下文补出 config、model、status、CLI 和 test 这些“一个完整功能应该有的东西”。</p>
+<p>但它不一定会主动追问：</p>
+<ul>
+<li>这个字段真的驱动行为了吗？</li>
+<li>这个状态来自事实，还是来自 projection？</li>
+<li>fallback 会不会把失败伪装成 success？</li>
+<li>warning 对用户真的可见吗？</li>
+<li>测试跑的是构造环境，还是真实 macOS 语义？</li>
+<li>这个查询来自 durable store，还是 bounded live cache？</li>
+</ul>
+<p>这些问题很多时候只能靠真实机器、长期运行、现场状态，以及人那种“总感觉哪里不对劲”的直觉暴露出来。</p>
+<p>以前我会把它们统称为 bug，修完就关。</p>
+<p>后来我发现，这样太浪费了。</p>
+<h2 id="二-human-问题不应该只被修掉还应该反过来修改流程"><a class="markdownIt-Anchor" href="#二-human-问题不应该只被修掉还应该反过来修改流程"></a> 二、<code>human</code> 问题不应该只被修掉，还应该反过来修改流程</h2>
+<p>如果同一类问题出现两三次，说明它已经不只是某段代码的问题，而是开发流程没有防住它。</p>
+<p>例如：</p>
+<ul>
+<li>多次出现“状态绿色但真实不可用”，就应该统一建模 health、gap 和 degraded；</li>
+<li>多次出现“字段存在但不驱动行为”，验收标准就必须加入 <code>config → runtime effect</code>；</li>
+<li>多次出现“live cache 有结果但 durable store 没结果”，就必须把 live projection 和 materialized query 分开；</li>
+<li>多次出现“CLI text 能看但 Skill 无法稳定读取”，就应该建立稳定的 <code>CLIResultEnvelope</code>；</li>
+<li>多次出现“当前机器能讲故事，导出后却不能复核”，就要补上 case export / verify / replay。</li>
+</ul>
+<p>所以 <code>human</code> 标签真正的价值，不是给问题分类，而是给流程喂反馈。</p>
+<p>人不应该永远跟在 AI 后面修 bug。更好的做法是把每一次现场翻车变成下一轮的系统约束、测试要求和 Release Gate。</p>
+<p>AI 犯一次错，我修一次，只能得到一个修复。</p>
+<p>AI 犯一次错，我把它变成验收契约，才可能让后面的十次开发都少踩这个坑。</p>
+<h2 id="三-cli-skill-dogfood我不允许-ai-变成隐藏的-truth-source"><a class="markdownIt-Anchor" href="#三-cli-skill-dogfood我不允许-ai-变成隐藏的-truth-source"></a> 三、CLI + Skill dogfood：我不允许 AI 变成隐藏的 truth source</h2>
+<p>Vestigra 后来开始大量使用 CLI + Skill dogfood。这里最先要解决的，不是 AI 会不会分析，而是 AI 到底从哪里拿事实。</p>
+<p>我给这条链路定了几个限制：</p>
+<ul>
+<li>AI 不能直接读取产品数据目录；</li>
+<li>不能直接解析 ledger segment；</li>
+<li>不能绕过 product data self-protection；</li>
+<li>不能把自己的判断写成 observed evidence；</li>
+<li>不能直接执行高风险响应。</li>
+</ul>
+<p>如果 AI 可以为了“方便”绕开这些边界，那么 Vestigra 前面辛苦建立的 Ledger、Evidence、Gap 和 Audit 全都白做了。</p>
+<p>所以正确的方向应该是：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">产品生成事实和状态<br>→ service / CLI 暴露稳定结果<br>→ CLI 输出稳定 JSON contract<br>→ Skill 消费 contract 并进行解释或编排<br>→ 高风险动作仍然经过产品策略、确认和审计<br></code></pre></td></tr></table></figure>
+<p><code>CLIResultEnvelope</code> 对我来说不只是一个 JSON 格式，它其实是 AI 参与产品工作流的合同。</p>
+<p>Skill 可以解释 Vestigra state、evidence、gaps、self-protect status、case results 和 performance alerts，但它不能悄悄成为新的事实源。</p>
+<p>以前我容易把 AI 想成一个 magic backend：把数据交给它，它自然会给我一个聪明答案。</p>
+<p>现在我更愿意把它当成一个能力很强、但必须被 contract 约束的协作者。</p>
+<h2 id="四-case-export-verify-replay好听的-story-不算验收"><a class="markdownIt-Anchor" href="#四-case-export-verify-replay好听的-story-不算验收"></a> 四、Case Export / Verify / Replay：好听的 Story 不算验收</h2>
+<p>如果一个 Story 只能在当前机器、当前 UI、当前 live cache 里看见，那它还不够可信。</p>
+<p>尤其 AI 参与解释以后，文字可以变得很流畅，因果链也可以讲得很像那么回事。但只要离开当前环境就无法复核，它仍然只是一段漂亮叙述。</p>
+<p>所以 Vestigra 后来补上了 case export / verify / replay 这条闭环。</p>
+<p>一个 case 至少应该能够携带：</p>
+<ul>
+<li>evidence-backed stories；</li>
+<li>rule evaluations；</li>
+<li>coverage；</li>
+<li>privacy / redaction 信息；</li>
+<li>integrity report；</li>
+<li>gap；</li>
+<li>claim；</li>
+<li>必要的 replay material。</li>
+</ul>
+<p>导出以后，另一个环境仍然应该能 verify / replay。AI 生成的每个关键判断，也应该能回指 evidence、claim 和 gap。</p>
+<p>这条要求看起来给开发添了很多麻烦，但它逼着我区分“当前界面能展示”和“结论真的可复核”。</p>
+<p>对于安全产品，这两个完成度根本不是一回事。</p>
+<h2 id="五-我后来发现release-gate-比-feature-list-更重要"><a class="markdownIt-Anchor" href="#五-我后来发现release-gate-比-feature-list-更重要"></a> 五、我后来发现，Release Gate 比 Feature List 更重要</h2>
+<p>早期做项目，我很容易盯着功能列表：这个功能有没有，那个功能什么时候做完。</p>
+<p>Vestigra 做到后面，我越来越关注另一张表：什么条件不满足，就绝对不能发。</p>
+<p>安全产品不能因为一个按钮能点、一个 CLI 能跑就进入 release。发布前，至少要重新证明这些承诺还成立：</p>
+<ul>
+<li>证据仍然可以追溯；</li>
+<li>Story 仍然是 evidence-backed；</li>
+<li>case 仍然可以 export / verify / replay；</li>
+<li>privacy / redaction 仍然生效；</li>
+<li>self-protect 退化时仍然会明确暴露；</li>
+<li>CLI JSON contract 没有漂移；</li>
+<li>高风险 Response 仍然受控；</li>
+<li>AI / Skill 仍然不能绕过边界。</li>
+</ul>
+<p>这也改变了我对“项目管理”的理解。</p>
+<p>项目管理不只是开多少 issue、关多少任务，而是在管理：</p>
+<ul>
+<li>什么才算完成；</li>
+<li>什么必须可复现；</li>
+<li>什么必须 fail-closed；</li>
+<li>什么只是 warning；</li>
+<li>什么必须 block release；</li>
+<li>哪些结论必须回指 evidence；</li>
+<li>哪些能力不能过度承诺；</li>
+<li>哪些 AI 行为必须被 contract 约束。</li>
+</ul>
+<p>这部分工作比让 AI 再补一个功能难多了，因为它要求我自己先想清楚产品到底承诺什么。</p>
+<h2 id="六-performancewatch-之后我还想让系统检查自己有没有说真话"><a class="markdownIt-Anchor" href="#六-performancewatch-之后我还想让系统检查自己有没有说真话"></a> 六、PerformanceWatch 之后，我还想让系统检查“自己有没有说真话”</h2>
+<p>PerformanceWatch 解决的问题是：程序是不是太慢。</p>
+<p>但只盯 CPU、Memory、Queue 和 Latency 还不够。系统也可能性能完全正常，只是语义已经悄悄错了。</p>
+<p>所以我后来开始想 Functional Watchdog。</p>
+<p>它不问“系统快不快”，而是问“系统还诚实吗”：</p>
+<ul>
+<li>Story 是否真的 durable？</li>
+<li>live projection 是否已经截断？</li>
+<li>查询来源是 live 还是 materialized？</li>
+<li>有没有出现 out-of-order apply？</li>
+<li>coverage gap 是否影响当前 Story？</li>
+<li>Dashboard 是否把 unknown 显示成 healthy？</li>
+<li>配置字段是否真的改变了 Runtime 行为？</li>
+<li>Endpoint Extension 授权状态是否被真实建模？</li>
+</ul>
+<p>理想状态下，这套 Functional Watchdog 应该复用 PerformanceWatch 已经走过的 Self Feedback 路径：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">发现语义退化<br>→ 收集上下文<br>→ 生成稳定报告<br>→ 通过 CLI JSON 暴露<br>→ 通知 Skill / AI<br>→ 进入修复工作流<br>→ 由同一套 Watchdog 回归验收<br></code></pre></td></tr></table></figure>
+<p>性能 Watchdog 解决“系统是不是太慢”。</p>
+<p>Functional Watchdog 解决“系统是不是还在说真话”。</p>
+<p>后者现在还不是一个可以随便夸口的完成态，它是我下一阶段想继续验证的方向。这个边界必须写清楚，否则我又会犯“有了设计名词，就当成功能已经存在”的老毛病。</p>
+<h2 id="七-当代码变便宜真正昂贵的是设计开发系统"><a class="markdownIt-Anchor" href="#七-当代码变便宜真正昂贵的是设计开发系统"></a> 七、当代码变便宜，真正昂贵的是设计开发系统</h2>
+<p>整个项目一路做下来，我的关注点一直在变。</p>
+<p>最开始，我觉得代码实现能力最重要。</p>
+<p>后来，我觉得架构设计最重要。</p>
+<p>现在，我越来越觉得项目管理能力才是 AI 开发里的核心能力。</p>
+<p>因为 AI 可以写代码、补实现、生成测试、解释状态，也可以整理一套看起来很完整的方案。但它不会自动替我决定：</p>
+<ul>
+<li>验收标准是什么；</li>
+<li>哪条工作流拥有事实；</li>
+<li>出问题以后通知谁；</li>
+<li>什么需要自动测试，什么必须真实机器验收；</li>
+<li>上下文怎么收集；</li>
+<li>问题怎么分类并回灌流程；</li>
+<li>哪些 Gate 不允许绕过；</li>
+<li>Watchdog 最终要证明什么。</li>
+</ul>
+<p>没有这些约束时，AI 的速度只是让混乱更快发生。</p>
+<p>约束足够强以后，它才可能成为真正的工程加速器。</p>
+<h2 id="目前的结论vestigra-也成了我的开发黑匣子"><a class="markdownIt-Anchor" href="#目前的结论vestigra-也成了我的开发黑匣子"></a> 目前的结论：Vestigra 也成了我的开发黑匣子</h2>
+<p>Vestigra 最开始想记录的是 macOS 端点上发生了什么，把底层事件串成 Story，让用户看见证据链。</p>
+<p>做到后来，它也开始记录我自己的开发过程：</p>
+<ul>
+<li>我怎么做决策；</li>
+<li>AI 怎么犯错；</li>
+<li>Runtime 怎么退化；</li>
+<li>自动化测试怎么漏掉真实问题；</li>
+<li>人的现场直觉怎么被变成流程输入；</li>
+<li>项目怎么从“功能完成”走向“语义可验证”。</li>
+</ul>
+<p>所以 Vestigra 表面上是一个本地优先、证据中心、规则驱动、AI 辅助、受控响应的 macOS EDR-like runtime。</p>
+<p>再往里一层，它也是我对 AI 开发方式的一次长期实验。</p>
+<p>未来真正重要的，也许不是谁能让 AI 写代码最快，而是谁能设计出一套会持续反馈、持续修正、持续提高质量的开发系统。</p>
+<p>至少这是我现在的阶段性结论。</p>
+<p>等 Functional Watchdog 真正在真实机器上跑起来以后，我大概还会回来再推翻一次自己。</p>
+</div><div class="tags"><a href="/tags/独立开发"><i class="fa fa-tag">独立开发</i></a><a href="/tags/AI编程流水线系列"><i class="fa fa-tag">AI编程流水线系列</i></a><a href="/tags/架构师之路"><i class="fa fa-tag">架构师之路</i></a><a href="/tags/AI辅助创作"><i class="fa fa-tag">AI辅助创作</i></a></div><div class="post-nav"><a class="next" href="/p/vestigra-development-diary-2/">[AI辅助创作] Vestigra开发日记（二）：一次失灵的CPU告警，逼我重构Runtime</a></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><div class="author-info"><a class="info-avatar" href="/about-me/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>stay hungry, stay foolish</p><a class="info-icon" href="https://twitter.com/gaoxiaodiao" title="Twitter" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:admin@domain.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/gaoxiaodiao" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/tags/%E5%A5%87%E6%8A%80%E6%B7%AB%E5%B7%A7/" style="font-size: 15px;">奇技淫巧</a> <a href="/tags/AI%E9%95%BF%E4%BB%BB%E5%8A%A1/" style="font-size: 15px;">AI长任务</a> <a href="/tags/%E5%85%85%E7%94%B5%E4%BC%9A%E5%91%98%E4%B8%93%E5%B1%9E/" style="font-size: 15px;">充电会员专属</a> <a href="/tags/%E7%8B%AC%E7%AB%8B%E5%BC%80%E5%8F%91/" style="font-size: 15px;">独立开发</a> <a href="/tags/AI%E7%BC%96%E7%A8%8B%E6%B5%81%E6%B0%B4%E7%BA%BF%E7%B3%BB%E5%88%97/" style="font-size: 15px;">AI编程流水线系列</a> <a href="/tags/linux%E5%BC%80%E5%8F%91/" style="font-size: 15px;">linux开发</a> <a href="/tags/mac%E5%BC%80%E5%8F%91/" style="font-size: 15px;">mac开发</a> <a href="/tags/%E5%BF%83%E8%B7%AF%E5%8E%86%E7%A8%8B/" style="font-size: 15px;">心路历程</a> <a href="/tags/%E5%89%AF%E4%B8%9A%E6%8E%A2%E7%B4%A2/" style="font-size: 15px;">副业探索</a> <a href="/tags/CTF/" style="font-size: 15px;">CTF</a> <a href="/tags/ChatGPT%E6%97%A0%E6%B3%95%E5%81%9A%E5%88%B0%E7%9A%84%E4%BA%8B%E6%83%85/" style="font-size: 15px;">ChatGPT无法做到的事情</a> <a href="/tags/%E5%B7%A5%E6%AC%B2%E5%96%84%E5%85%B6%E4%BA%8B-%E5%BF%85%E5%85%88%E5%88%A9%E5%85%B6%E5%99%A8/" style="font-size: 15px;">工欲善其事,必先利其器</a> <a href="/tags/Foundry/" style="font-size: 15px;">Foundry</a> <a href="/tags/PowerShell/" style="font-size: 15px;">PowerShell</a> <a href="/tags/%E5%8E%9F%E5%A7%8B%E7%9F%A5%E8%AF%86%E7%A7%AF%E7%B4%AF/" style="font-size: 15px;">原始知识积累</a> <a href="/tags/%E7%AC%AC%E4%B8%89%E6%96%B9%E5%BA%93%E7%BC%96%E8%AF%91/" style="font-size: 15px;">第三方库编译</a> <a href="/tags/%E9%80%86%E5%90%91-%E7%A0%B4%E8%A7%A3/" style="font-size: 15px;">逆向&破解</a> <a href="/tags/%E7%AC%94%E8%AE%B0/" style="font-size: 15px;">笔记</a> <a href="/tags/%E5%BC%80%E5%8F%91-%E4%BB%A3%E7%A0%81/" style="font-size: 15px;">开发&代码</a> <a href="/tags/%E5%A4%AA%E7%9B%91/" style="font-size: 15px;">太监</a> <a href="/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E9%99%A4-%E4%BF%AE%E5%A4%8D/" style="font-size: 15px;">故障排除/修复</a> <a href="/tags/%E6%9E%B6%E6%9E%84%E5%B8%88%E4%B9%8B%E8%B7%AF/" style="font-size: 15px;">架构师之路</a> <a href="/tags/AI%E8%BE%85%E5%8A%A9%E5%88%9B%E4%BD%9C/" style="font-size: 15px;">AI辅助创作</a> <a href="/tags/%E4%B8%80%E4%BA%BA%E5%85%AC%E5%8F%B8/" style="font-size: 15px;">一人公司</a> <a href="/tags/htb/" style="font-size: 15px;">htb</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-3/">[AI辅助创作] Vestigra开发日记（三）：AI能写代码以后，我开始重做项目管理</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-2/">[AI辅助创作] Vestigra开发日记（二）：一次失灵的CPU告警，逼我重构Runtime</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-1/">[AI辅助创作] Vestigra开发日记（一）：从macOS黑匣子到行为保护</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-build-long-running-agent-tasks-zhukong-skill-ralph-loop-part-3/">如何实现Agent长时间执行任务（三）：GPT Pro工作流</a></li><li class="post-list-item"><a class="post-list-link" href="/p/solo-company-experiment-02/">一人公司生存实验 02：连续撞墙之后，我终于看清了自己的定位</a></li><li class="post-list-item"><a class="post-list-link" href="/p/solo-company-experiment-01/">一人公司生存实验 01：从“把事情做好”，到“证明有人买单”</a></li><li class="post-list-item"><a class="post-list-link" href="/p/life-balance-sheet-from-vacant-rental/">[AI辅助创作]从房东空置半年，到人生其实是一张资产负债表</a></li><li class="post-list-item"><a class="post-list-link" href="/p/inspiration-future-echo-information-universe/">[AI辅助创作]灵感是未来的回声：如果宇宙本质上是信息</a></li><li class="post-list-item"><a class="post-list-link" href="/p/internet-devours-human-agency/">[AI辅助创作]当互联网开始吞噬人的主体性</a></li><li class="post-list-item"><a class="post-list-link" href="/p/organization-management-cybernetics-agent-same-thing/">[AI辅助创作]组织、管理、控制论、Agent：它们其实是一回事</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://gaoxiaodiao.com/" title="高小调博客" target="_blank">高小调博客</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">高小调博客.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.js"></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0"></script><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.css"><script type="text/javascript" src="/js/love.js?v=1.0.0"></script><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>
