@@ -1,0 +1,381 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="描述"><title>[AI辅助创作] Mac Studio 跑 Qwen3.8-27B：折腾两天，我才发现优化错了方向 | 高小调博客</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/normalize/latest/normalize.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/pure-min.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/grids-responsive-min.min.css"><link rel="stylesheet" href="//lib.baomitu.com/font-awesome/4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//lib.baomitu.com/jquery/latest/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><script type="text/javascript" src="//lib.baomitu.com/clipboard.js/latest/clipboard.min.js"></script><script type="text/javascript" src="//lib.baomitu.com/toastr.js/latest/toastr.min.js"></script><link rel="stylesheet" href="//lib.baomitu.com/toastr.js/latest/toastr.min.css"><meta name="generator" content="Hexo 8.1.1"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">[AI辅助创作] Mac Studio 跑 Qwen3.8-27B：折腾两天，我才发现优化错了方向</h1><a id="logo" href="/.">高小调博客</a><p class="description">人生，不止代码</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> 首页</i></a><a href="/about-me/"><i class="fa fa-user"> 关于</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">[AI辅助创作] Mac Studio 跑 Qwen3.8-27B：折腾两天，我才发现优化错了方向</h1><div class="post-meta">2026-08-21</div><div class="post-content"><blockquote>
+<p><strong>AI 创作声明</strong>：本文由作者提供原始素材、核心观点和最终判断，AI 参与结构整理、表达润色和发布格式化。文章发布前由作者审核确认。</p>
+</blockquote>
+<p>这两天，我几乎把能折腾的地方都折腾了一遍。</p>
+<p>Mac Studio 上装了 Qwen3.8-27B，4-bit、5-bit、6-bit、8-bit 的 MLX 量化版本全下了；Codex、Claude Code、Qwen Code 轮流接；DFlash2、MTP、oMLX 也一个个试。</p>
+<p>我一开始想得很直接：</p>
+<blockquote>
+<p>模型输出太慢，那就继续优化模型，让它每秒多吐几个 token。</p>
+</blockquote>
+<p>结果折腾两天后，我才发现自己盯错了地方。</p>
+<p>最能说明问题的一幕，是我只在 Coding Agent 里输入了一句：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">Hi<br></code></pre></td></tr></table></figure>
+<p>模型却迟迟没有开始输出。</p>
+<p>问题根本不在这句 <code>Hi</code>。在它前面，Agent 已经悄悄塞进了系统提示词、工具定义、项目指令、Skills、MCP 工具描述和会话历史。对模型来说，这不是一个 token 的请求，而可能是几千、几万 token 的完整上下文。</p>
+<p>到这里，我才真正意识到：</p>
+<blockquote>
+<p><strong>对于本地 Coding Agent，决定实际体验的，不只是模型每秒能生成多少 token，更重要的是 Agent 在第一次请求时，究竟让模型处理了多少上下文。</strong></p>
+</blockquote>
+<p>我真正遇到的主要瓶颈，不是 Decode，而是 Prefill。</p>
+<hr />
+<h2 id="一-先交代我的硬件和模型环境"><a class="markdownIt-Anchor" href="#一-先交代我的硬件和模型环境"></a> 一、先交代我的硬件和模型环境</h2>
+<p>我的设备是 Mac Studio，配置如下：</p>
+<ul>
+<li>Apple M4 Max</li>
+<li>16 核 CPU</li>
+<li>40 核 GPU</li>
+<li>128GB 统一内存</li>
+<li>546GB/s 内存带宽</li>
+</ul>
+<p><a target="_blank" rel="noopener" href="https://www.apple.com/mac-studio/specs/">Apple 官方规格</a>显示，546GB/s 对应 16 核 CPU、40 核 GPU 的 M4 Max；128GB 统一内存也属于这一档可选配置。</p>
+<p>不过，546GB/s 是硬件层面的峰值内存带宽，不等于运行 LLM 时一定能得到 546GB/s 的有效吞吐。实际性能还会受到很多因素影响：</p>
+<ul>
+<li>MLX 内核实现；</li>
+<li>模型架构；</li>
+<li>量化方式；</li>
+<li>KV Cache；</li>
+<li>Prefill 批次大小；</li>
+<li>GPU 调度与同步；</li>
+<li>推理框架额外开销。</li>
+</ul>
+<p>模型方面，我通过 LM Studio 部署了 <code>Qwen3.8-27B</code>，并分别下载了 4-bit、5-bit、6-bit 和 8-bit 的 MLX 量化版本。<a target="_blank" rel="noopener" href="https://lmstudio.ai/models/qwen/qwen3.8-27b">LM Studio 的模型页</a>目前确实列出了这四个版本。</p>
+<p>按照 <a target="_blank" rel="noopener" href="https://huggingface.co/Qwen/Qwen3.8-27B">Qwen 官方模型卡</a>，<code>Qwen3.8-27B</code> 是 27B 稠密模型，原生支持图像和视频理解，原生上下文长度为 262,144 token，并包含多步 MTP 训练。LM Studio 给它的默认配置里，Thinking 开启，Reasoning Effort 默认为 <code>xhigh</code>。</p>
+<p>纸面上看，这套配置已经相当豪华。</p>
+<p>但“模型能装进内存”和“Agent 用起来顺手”，完全是两回事。</p>
+<hr />
+<h2 id="二-第一个弯路让-codex-自动寻找最优配置"><a class="markdownIt-Anchor" href="#二-第一个弯路让-codex-自动寻找最优配置"></a> 二、第一个弯路：让 Codex 自动寻找最优配置</h2>
+<p>一开始，我让 Codex，也就是 GPT-5.6 SOL，自动测试不同量化版本和推理参数，希望它最后给我一套“最优配置”。</p>
+<p>为了让结果看起来更科学，我还让它下载了一些公开测试集，对不同模型和参数组合做自动化评测。</p>
+<p>整个过程跑了很久。</p>
+<p>最后 Codex 推荐的配置，与 LM Studio 默认配置没有本质区别。</p>
+<p>当时我多少有点郁闷：跑了这么久，就这？</p>
+<p>现在回头看，这部分工作的边际收益确实很低。但问题并不是“公开 Benchmark 完全没用”，而是我测试的指标和真正关心的场景根本没有对齐。</p>
+<p>公开 Benchmark 更适合衡量回答质量、知识能力、推理能力或者代码正确率，而我真正关心的是：</p>
+<ul>
+<li>Coding Agent 第一次响应要等多久；</li>
+<li>10K、20K、50K 输入上下文要花多久完成 Prefill；</li>
+<li>Agent 的工具定义占了多少 token；</li>
+<li>多轮工具调用后能不能复用 Prefix Cache；</li>
+<li>模型多久开始输出第一个可见 token；</li>
+<li>本地推理会不会因为长时间无流量而超时；</li>
+<li>视觉、工具调用和长上下文能不能同时正常工作。</li>
+</ul>
+<p>这些才是我的真实工作负载。</p>
+<p>所以，这次自动化评测真正的问题不是不够认真，而是我从一开始就优化错了目标。</p>
+<hr />
+<h2 id="三-输入一句-hi模型处理的根本不只是-hi"><a class="markdownIt-Anchor" href="#三-输入一句-hi模型处理的根本不只是-hi"></a> 三、输入一句 Hi，模型处理的根本不只是 Hi</h2>
+<p>完成模型配置后，我先后尝试了：</p>
+<ul>
+<li>Codex CLI；</li>
+<li>Claude Code；</li>
+<li>Qwen Code。</li>
+</ul>
+<p>它们都有一个共同点：功能非常完整。</p>
+<p>但“完整”不是免费的。Agent 需要向模型描述大量能力，例如：</p>
+<ul>
+<li>系统行为约束；</li>
+<li>文件读取与编辑工具；</li>
+<li>Shell 执行工具；</li>
+<li>搜索与 Git 操作；</li>
+<li>Skills；</li>
+<li>MCP server；</li>
+<li>项目级规则；</li>
+<li>会话历史；</li>
+<li>工具参数的 JSON Schema。</li>
+</ul>
+<p>这些内容最终都会成为模型输入的一部分。</p>
+<p>所以，我在 Agent 里发送一句 <code>Hi</code> 时，实际请求更接近：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">系统提示词<br>+ Agent 行为规范<br>+ 工具定义<br>+ Skills<br>+ MCP 描述<br>+ 项目级指令<br>+ 会话历史<br>+ 用户输入的 Hi<br></code></pre></td></tr></table></figure>
+<p>本地模型要先处理完这整段输入，也就是完成 Prompt Processing，才能进入逐 token 生成阶段。</p>
+<p>一次 LLM 请求可以粗略拆成四个阶段：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>主要工作</th>
+<th>用户感受</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>模型加载</td>
+<td>把模型权重载入统一内存</td>
+<td>启动 server 时等待</td>
+</tr>
+<tr>
+<td>Prefill</td>
+<td>处理系统提示词、工具定义和历史上下文</td>
+<td>输入后长时间没有输出</td>
+</tr>
+<tr>
+<td>Decode</td>
+<td>逐个或批量生成新 token</td>
+<td>开始看到模型输出</td>
+</tr>
+<tr>
+<td>工具执行</td>
+<td>读取文件、执行命令、修改代码</td>
+<td>Agent 开始实际工作</td>
+</tr>
+</tbody>
+</table>
+<p>我一开始只盯着 Decode，也就是输出 token 的速度。</p>
+<p>但实际使用时，真正让我感觉“慢”的，很多时候是 Prefill。</p>
+<p>这两者不是同一个问题。</p>
+<hr />
+<h2 id="四-第二个弯路只靠推理加速解决体验问题"><a class="markdownIt-Anchor" href="#四-第二个弯路只靠推理加速解决体验问题"></a> 四、第二个弯路：只靠推理加速解决体验问题</h2>
+<h3 id="1-dflash2decode-变快了第一口气还是没上来"><a class="markdownIt-Anchor" href="#1-dflash2decode-变快了第一口气还是没上来"></a> 1. DFlash2：Decode 变快了，第一口气还是没上来</h3>
+<p>我随后尝试了 DFlash2。</p>
+<p>DFlash2 属于推测解码路线。它会先用较小的 draft model 生成候选 token，再由目标模型验证。与 DFlash 相比，DFlash2 又加入了局部卷积和候选选择器；核心目标仍然是用更少的目标模型前向计算完成更多 Decode。</p>
+<p>这条路线在我的测试中确实能明显提高 token 生成速度。</p>
+<p>但它解决不了我的核心问题：</p>
+<blockquote>
+<p><strong>DFlash2 主要优化 Decode，不会自动消除大型 Agent 在初始请求里塞入的上下文。</strong></p>
+</blockquote>
+<p>如果 Agent 一启动就让模型处理 10K token，那么在输出第一个 token 之前，模型依然要先完成这 10K token 的 Prompt Processing。</p>
+<p>Decode 从每秒 20 token 提高到每秒 30 token，当然有价值；但如果第一段 Prefill 仍然要等很久，用户的第一感受还是“卡住了”。</p>
+<p>另外，我使用的 DFlash2 路径还出现了视觉识别不可用或异常的问题。</p>
+<p>这里必须把话说严谨：</p>
+<blockquote>
+<p>不能直接得出“DFlash2 必然破坏视觉能力”的结论。更准确的说法是：<strong>我当时使用的 DFlash2 实现、模型文件和推理框架组合，存在视觉兼容性问题。</strong></p>
+</blockquote>
+<p>近期 <code>llama.cpp</code> 的 <a target="_blank" rel="noopener" href="https://github.com/ggml-org/llama.cpp/pull/27342">DFlash2 支持 PR</a> 里也出现过多模态位置处理导致视觉请求失败的报告和修复讨论。这类问题更像是实现兼容性或模型加载路径的问题，不是算法层面的必然缺陷。</p>
+<p>但对实际使用者来说，结论还是很简单：</p>
+<p><strong>只要视觉不能稳定工作，这条加速路径就不适合成为我的默认方案。</strong></p>
+<h3 id="2-mtp同样主要解决-decode"><a class="markdownIt-Anchor" href="#2-mtp同样主要解决-decode"></a> 2. MTP：同样主要解决 Decode</h3>
+<p>我也尝试了 MTP，也就是 Multi-Token Prediction。</p>
+<p>Qwen3.8-27B 本身包含经过训练的多步 MTP 模块。它的目标同样是减少传统自回归解码“一次只确认一个 token”的低效率，尝试在一次模型计算中预测或验证多个 token。</p>
+<p>它可以改善 Decode，但收益不是固定值，会受到很多因素影响：</p>
+<ul>
+<li>MTP head 的预测准确率；</li>
+<li>token 接受率；</li>
+<li>量化位数；</li>
+<li>上下文长度；</li>
+<li>硬件型号；</li>
+<li>验证阶段的计算开销；</li>
+<li>推理框架实现。</li>
+</ul>
+<p>这也是为什么我不再愿意拿某个公开数字直接套到自己的 Mac 上。不同模型、量化、上下文和框架组合，结果差异可能很大。</p>
+<p>更重要的是，MTP 依然主要解决生成阶段的问题。它不会自动缩短一个臃肿 Agent 的系统 prompt。</p>
+<p>所以，无论 DFlash2 还是 MTP，都没有真正解决我当时最主要的痛点。</p>
+<hr />
+<h2 id="五-omlx方向更接近需求但我没有完成有效验证"><a class="markdownIt-Anchor" href="#五-omlx方向更接近需求但我没有完成有效验证"></a> 五、oMLX：方向更接近需求，但我没有完成有效验证</h2>
+<p>随后我尝试了 oMLX。</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/jundot/omlx">oMLX</a> 是面向 Apple Silicon 的 OpenAI-compatible 推理 server，支持 Continuous Batching 和分层 KV Cache。它可以把缓存放在内存和 SSD 中，尽量复用已经计算过的上下文。</p>
+<p>从优化方向看，oMLX 比单纯提高 Decode 速度更接近我的真实需求。</p>
+<p>因为 Coding Agent 的系统提示词和工具定义通常会反复出现。如果 Prefix Cache 能稳定命中，后续请求就不必每次从头处理全部前缀。</p>
+<p>这正是本地 Agent 非常需要的能力。</p>
+<p>直接通过 HTTP 请求调用 oMLX 时，我能明显感觉到响应很快。但当我把它接到 Qwen Code CLI 后，却遇到了新的问题：</p>
+<ul>
+<li>oMLX 后端已经生成并返回内容；</li>
+<li>Qwen Code CLI 却没有正常显示或消费这些内容；</li>
+<li>最终请求无法正常完成。</li>
+</ul>
+<p>这里只看现象，还不能武断地说“oMLX 后端做得不好”或者“Qwen Code 有 bug”。问题可能位于：</p>
+<ul>
+<li>API endpoint 选择；</li>
+<li>SSE stream 格式；</li>
+<li>reasoning 字段；</li>
+<li>tool call event 格式；</li>
+<li>chunk 结束标记；</li>
+<li>Qwen Code 的流式响应解析；</li>
+<li>oMLX 对客户端协议的兼容实现。</li>
+</ul>
+<p>所以，我当时能下的结论只有：</p>
+<blockquote>
+<p><strong>我遇到了 oMLX 与 Qwen Code CLI 之间的流式协议兼容问题，因此没有完成足够有效的验证。</strong></p>
+</blockquote>
+<p>继续排查当然可以，但时间成本已经超过潜在收益。我最后暂停了这条路线。</p>
+<p>这也是两天里另一个很真实的教训：看到后端日志里“已经有输出”，不等于整个 Agent 链路已经跑通。服务端、协议适配和客户端解析，任何一层都可能把体验卡死。</p>
+<hr />
+<h2 id="六-真正的转机我不再优化模型开始精简-agent"><a class="markdownIt-Anchor" href="#六-真正的转机我不再优化模型开始精简-agent"></a> 六、真正的转机：我不再优化模型，开始精简 Agent</h2>
+<p>整个事情的转机，是我突然意识到：</p>
+<blockquote>
+<p>我不一定非要继续使用 Codex、Claude Code 或 Qwen Code，也可以换一个更轻量的 Coding Agent。</p>
+</blockquote>
+<p>于是我开始尝试 Pi。</p>
+<p>Pi 默认只有四个核心工具：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">read<br>bash<br>edit<br>write<br></code></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="https://pi.dev/docs/latest/sdk">Pi 的 SDK 文档</a>也把这四个工具列为默认内置工具。它们已经覆盖 Coding Agent 最核心的工作：</p>
+<ul>
+<li>查看和搜索代码；</li>
+<li>执行命令；</li>
+<li>编辑文件；</li>
+<li>新建文件；</li>
+<li>运行测试。</li>
+</ul>
+<p>相较于功能复杂的 Agent，Pi 的系统设计更克制。</p>
+<p>在我的实际测试中，它的初始上下文只有数千 token，因此：</p>
+<ul>
+<li>启动更快；</li>
+<li>Prefill 更短；</li>
+<li>第一个 token 出现得更早；</li>
+<li>工具调用过程更直接；</li>
+<li>对本地低吞吐模型更友好；</li>
+<li>不会为了大量暂时用不到的功能，提前支付上下文成本。</li>
+</ul>
+<p>这让我得到一个非常明确的判断：</p>
+<blockquote>
+<p><strong>对于本地 LLM，Agent 的极简程度，本身就是一种性能优化。</strong></p>
+</blockquote>
+<p>云端模型的 Prefill 吞吐、并发能力和缓存条件通常更好，Agent 多塞几千 token，用户未必有明显感觉。</p>
+<p>但本地模型的计算预算更有限。Agent 每增加一项工具，都可能同时增加：</p>
+<ul>
+<li>工具描述；</li>
+<li>参数 Schema；</li>
+<li>行为说明；</li>
+<li>调用示例；</li>
+<li>结果格式要求。</li>
+</ul>
+<p>这些内容不只是占用上下文窗口，还会在首次请求时消耗真实计算时间。</p>
+<p>所以，对本地模型来说，功能更多并不必然意味着体验更好。</p>
+<p>有时候，工具更少，任务反而完成得更快。</p>
+<hr />
+<h2 id="七-pi-的隐藏坑五分钟-http-idle-timeout"><a class="markdownIt-Anchor" href="#七-pi-的隐藏坑五分钟-http-idle-timeout"></a> 七、Pi 的隐藏坑：五分钟 HTTP Idle Timeout</h2>
+<p>Pi 虽然更适合本地模型，但我随后又踩到了一个很隐蔽的坑。</p>
+<p>Pi 默认配置是：</p>
+<figure class="highlight json" data-language="json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs json" data-language="json"><span class="hljs-attr">&quot;httpIdleTimeoutMs&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">300000</span><br></code></pre></td></tr></table></figure>
+<p>300,000 毫秒，也就是五分钟。</p>
+<p>这个参数不是“整个任务最多只能执行五分钟”，而是：</p>
+<blockquote>
+<p><strong>如果 HTTP Header、Body 或流式响应连续五分钟没有任何数据，Pi 就会认为连接已经空闲或失效。</strong></p>
+</blockquote>
+<p><a target="_blank" rel="noopener" href="https://pi.dev/docs/latest/settings">Pi 官方设置文档</a>确认，<code>httpIdleTimeoutMs</code> 默认值是 <code>300000</code>，并且可以设置为 <code>0</code> 来禁用 Idle Timeout。与此同时，Pi 默认开启 Agent 级自动重试，<code>retry.maxRetries</code> 默认为 <code>3</code>。</p>
+<p>这就解释了我遇到的现象。</p>
+<p>当我让 Qwen3.8-27B 以 <code>xhigh</code> 推理强度执行复杂任务时，模型可能会经历很长的 Prefill 或推理阶段。如果推理 server 在这段时间里没有向 HTTP stream 写入任何数据，五分钟后 Pi 就会判定请求超时，然后自动重试。</p>
+<p>如果连续几次都发生同样的问题，最后就会出现类似：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">Retry failed after three attempts<br></code></pre></td></tr></table></figure>
+<p>然后任务被终止。</p>
+<p>但这不代表模型已经停止工作，也不一定代表 server 崩溃。模型可能仍在：</p>
+<ul>
+<li>处理超长输入；</li>
+<li>生成内部推理内容；</li>
+<li>等待第一个可输出 token；</li>
+<li>缓冲 reasoning 内容；</li>
+<li>执行尚未产生流式事件的计算。</li>
+</ul>
+<p>真正的问题只是：Pi 在五分钟内没有收到任何网络数据。</p>
+<p>解决方法很简单。在 Pi 的 <code>settings.json</code> 中加入：</p>
+<figure class="highlight json" data-language="json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs json" data-language="json"><span class="hljs-punctuation">&#123;</span><br>  <span class="hljs-attr">&quot;httpIdleTimeoutMs&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1200000</span><br><span class="hljs-punctuation">&#125;</span><br></code></pre></td></tr></table></figure>
+<p><code>1200000</code> 等于 20 分钟。也可以设置为 15 分钟：</p>
+<figure class="highlight json" data-language="json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs json" data-language="json"><span class="hljs-punctuation">&#123;</span><br>  <span class="hljs-attr">&quot;httpIdleTimeoutMs&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">900000</span><br><span class="hljs-punctuation">&#125;</span><br></code></pre></td></tr></table></figure>
+<p>如果确定只连接可信的本地 server，也可以设置为：</p>
+<figure class="highlight json" data-language="json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs json" data-language="json"><span class="hljs-punctuation">&#123;</span><br>  <span class="hljs-attr">&quot;httpIdleTimeoutMs&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0</span><br><span class="hljs-punctuation">&#125;</span><br></code></pre></td></tr></table></figure>
+<p>不过我更倾向于保留一个较长但有限的超时，例如 15～20 分钟，而不是完全关闭。</p>
+<p>否则，如果 server 真的死锁或者连接永久挂起，Pi 可能会一直等下去。</p>
+<hr />
+<h2 id="八-这两天真正有价值的经验"><a class="markdownIt-Anchor" href="#八-这两天真正有价值的经验"></a> 八、这两天真正有价值的经验</h2>
+<p>回头看，我一开始一直在研究：</p>
+<ul>
+<li>4-bit、5-bit、6-bit 还是 8-bit；</li>
+<li>每秒能生成多少 token；</li>
+<li>DFlash2 能提高多少；</li>
+<li>MTP 能提高多少；</li>
+<li>哪个推理 server 更快。</li>
+</ul>
+<p>这些问题当然有价值，但不是我最应该优先解决的问题。</p>
+<p>现在如果让我重新排一次优先级，我会这样做。</p>
+<h3 id="第一优先级减少无效输入"><a class="markdownIt-Anchor" href="#第一优先级减少无效输入"></a> 第一优先级：减少无效输入</h3>
+<p>先检查 Agent 到底发送了多少内容：</p>
+<ul>
+<li>System Prompt 有多长；</li>
+<li>Tool Schema 有多少；</li>
+<li>是否加载了暂时用不到的 Skills；</li>
+<li>是否连接了暂时用不到的 MCP；</li>
+<li>是否自动注入大量项目规则；</li>
+<li>是否保留了过多历史推理内容。</li>
+</ul>
+<h3 id="第二优先级缩短-prefill"><a class="markdownIt-Anchor" href="#第二优先级缩短-prefill"></a> 第二优先级：缩短 Prefill</h3>
+<p>重点观察：</p>
+<ul>
+<li>Prompt Processing Speed；</li>
+<li>Time to First Token（TTFT）；</li>
+<li>Prefix Cache 是否命中；</li>
+<li>重复系统 prompt 能否复用；</li>
+<li>上下文增长后，TTFT 如何变化。</li>
+</ul>
+<h3 id="第三优先级选择合适的推理强度"><a class="markdownIt-Anchor" href="#第三优先级选择合适的推理强度"></a> 第三优先级：选择合适的推理强度</h3>
+<p>不是所有任务都需要 <code>xhigh</code>。</p>
+<p>修改变量名、修复简单编译错误、增加日志、补一处测试、修改一项配置，使用 <code>medium</code> 或 <code>low</code> 往往已经足够。</p>
+<p><code>xhigh</code> 更适合：</p>
+<ul>
+<li>大型架构设计；</li>
+<li>复杂 bug 定位；</li>
+<li>跨模块重构；</li>
+<li>长时间自主任务；</li>
+<li>需要大量权衡的技术决策。</li>
+</ul>
+<h3 id="第四优先级最后再优化-decode"><a class="markdownIt-Anchor" href="#第四优先级最后再优化-decode"></a> 第四优先级：最后再优化 Decode</h3>
+<p>完成前面三项后，才值得继续测试：</p>
+<ul>
+<li>DFlash2；</li>
+<li>MTP；</li>
+<li>不同量化位数；</li>
+<li>自定义 Metal kernel；</li>
+<li>ANE/GPU Prefill；</li>
+<li>Continuous Batching。</li>
+</ul>
+<p>否则，很可能只是把一个次要阶段优化得很快，却没有改善真正的端到端延迟。</p>
+<hr />
+<h2 id="九-我现在的本地-coding-agent-方案"><a class="markdownIt-Anchor" href="#九-我现在的本地-coding-agent-方案"></a> 九、我现在的本地 Coding Agent 方案</h2>
+<p>经过这两天的折腾，我目前更倾向于这套组合：</p>
+<figure class="highlight text" data-language="text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs text" data-language="text">Mac Studio M4 Max 128GB<br>        ↓<br>Qwen3.8-27B MLX<br>        ↓<br>LM Studio 或兼容的 OpenAI API server<br>        ↓<br>Pi Coding Agent<br>        ↓<br>按任务调整 reasoning effort<br>        ↓<br>HTTP Idle Timeout 调整为 15～20 分钟<br></code></pre></td></tr></table></figure>
+<p>模型量化方面，我暂时不会再让通用 Benchmark 替我做决定。我会回到真实任务上比较：</p>
+<ol>
+<li>
+<p>同一个真实项目；</p>
+</li>
+<li>
+<p>同一个任务；</p>
+</li>
+<li>
+<p>相同 Agent；</p>
+</li>
+<li>
+<p>相同 prompt；</p>
+</li>
+<li>
+<p>分别记录 4-bit、5-bit、6-bit、8-bit 的：</p>
+<ul>
+<li>Prefill 速度；</li>
+<li>首 token 延迟；</li>
+<li>Decode 速度；</li>
+<li>内存占用；</li>
+<li>工具调用成功率；</li>
+<li>视觉识别质量；</li>
+<li>最终任务完成质量。</li>
+</ul>
+</li>
+</ol>
+<p>只有这种测试，才能回答哪个量化版本真正适合我。</p>
+<hr />
+<h2 id="最后我优化错的不是参数而是层级"><a class="markdownIt-Anchor" href="#最后我优化错的不是参数而是层级"></a> 最后：我优化错的不是参数，而是层级</h2>
+<p>这两天我最大的认知变化，是从：</p>
+<blockquote>
+<p>如何让本地模型跑得更快？</p>
+</blockquote>
+<p>转变成了：</p>
+<blockquote>
+<p>如何让本地模型少做无意义的计算？</p>
+</blockquote>
+<p>对于本地 LLM 来说，token 不只是上下文长度单位，也是实际的时间和算力成本。</p>
+<p>云端 Agent 可以依靠更强的硬件和服务端缓存，把复杂系统 prompt、几十个工具和大量 MCP 定义一股脑塞给模型。但在本地环境里，我必须更克制。</p>
+<p>所以，我目前的结论是：</p>
+<blockquote>
+<p><strong>本地 LLM 不一定需要功能最强的 Coding Agent，而是需要上下文开销更小、工具数量更克制、行为更可预测的 Agent。</strong></p>
+</blockquote>
+<p>DFlash2 和 MTP 可以提高 Decode 速度，oMLX 也可能通过 Prefix Cache 和 Prefill 优化改善体验。</p>
+<p>但这些都是第二层优化。</p>
+<p>第一层优化永远是：</p>
+<blockquote>
+<p><strong>不要让模型处理它根本不需要知道的内容。</strong></p>
+</blockquote>
+<p>我折腾两天后，真正换掉的不是模型，也不是量化版本，而是自己的优化顺序。</p>
+<h3 id="这篇文章的风格自检"><a class="markdownIt-Anchor" href="#这篇文章的风格自检"></a> 这篇文章的风格自检</h3>
+<ul>
+<li>从 Mac Studio 上真实部署本地模型的卡点切入，没有从抽象概念开场；</li>
+<li>保留了 Benchmark、DFlash2、MTP、oMLX 和 Pi 的失败路径与判断修正；</li>
+<li>区分了个人实测、官方能力和仍未完成验证的兼容性问题；</li>
+<li>最后收束为可复用的优化顺序，而不是只给一句“换轻量 Agent”。</li>
+</ul>
+</div><div class="tags"><a href="/tags/奇技淫巧"><i class="fa fa-tag">奇技淫巧</i></a><a href="/tags/AI长任务"><i class="fa fa-tag">AI长任务</i></a><a href="/tags/故障排除/修复"><i class="fa fa-tag">故障排除/修复</i></a><a href="/tags/AI辅助创作"><i class="fa fa-tag">AI辅助创作</i></a></div><div class="post-nav"><a class="next" href="/p/vestigra-adversarial-notes-01-gatekeeper-bypass-behavioral-detection/">Vestigra对抗手记01｜Gatekeeper Bypass：从规避到检测</a></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><div class="author-info"><a class="info-avatar" href="/about-me/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>stay hungry, stay foolish</p><a class="info-icon" href="https://twitter.com/gaoxiaodiao" title="Twitter" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:admin@domain.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/gaoxiaodiao" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/tags/%E5%A5%87%E6%8A%80%E6%B7%AB%E5%B7%A7/" style="font-size: 15px;">奇技淫巧</a> <a href="/tags/AI%E9%95%BF%E4%BB%BB%E5%8A%A1/" style="font-size: 15px;">AI长任务</a> <a href="/tags/%E5%85%85%E7%94%B5%E4%BC%9A%E5%91%98%E4%B8%93%E5%B1%9E/" style="font-size: 15px;">充电会员专属</a> <a href="/tags/%E7%8B%AC%E7%AB%8B%E5%BC%80%E5%8F%91/" style="font-size: 15px;">独立开发</a> <a href="/tags/%E5%BF%83%E8%B7%AF%E5%8E%86%E7%A8%8B/" style="font-size: 15px;">心路历程</a> <a href="/tags/AI%E7%BC%96%E7%A8%8B%E6%B5%81%E6%B0%B4%E7%BA%BF%E7%B3%BB%E5%88%97/" style="font-size: 15px;">AI编程流水线系列</a> <a href="/tags/linux%E5%BC%80%E5%8F%91/" style="font-size: 15px;">linux开发</a> <a href="/tags/mac%E5%BC%80%E5%8F%91/" style="font-size: 15px;">mac开发</a> <a href="/tags/%E5%B7%A5%E6%AC%B2%E5%96%84%E5%85%B6%E4%BA%8B-%E5%BF%85%E5%85%88%E5%88%A9%E5%85%B6%E5%99%A8/" style="font-size: 15px;">工欲善其事,必先利其器</a> <a href="/tags/%E9%80%86%E5%90%91-%E7%A0%B4%E8%A7%A3/" style="font-size: 15px;">逆向&破解</a> <a href="/tags/%E7%AC%AC%E4%B8%89%E6%96%B9%E5%BA%93%E7%BC%96%E8%AF%91/" style="font-size: 15px;">第三方库编译</a> <a href="/tags/%E7%AC%94%E8%AE%B0/" style="font-size: 15px;">笔记</a> <a href="/tags/%E5%BC%80%E5%8F%91-%E4%BB%A3%E7%A0%81/" style="font-size: 15px;">开发&代码</a> <a href="/tags/%E5%A4%AA%E7%9B%91/" style="font-size: 15px;">太监</a> <a href="/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E9%99%A4-%E4%BF%AE%E5%A4%8D/" style="font-size: 15px;">故障排除/修复</a> <a href="/tags/CTF/" style="font-size: 15px;">CTF</a> <a href="/tags/ChatGPT%E6%97%A0%E6%B3%95%E5%81%9A%E5%88%B0%E7%9A%84%E4%BA%8B%E6%83%85/" style="font-size: 15px;">ChatGPT无法做到的事情</a> <a href="/tags/Foundry/" style="font-size: 15px;">Foundry</a> <a href="/tags/%E5%89%AF%E4%B8%9A%E6%8E%A2%E7%B4%A2/" style="font-size: 15px;">副业探索</a> <a href="/tags/%E5%8E%9F%E5%A7%8B%E7%9F%A5%E8%AF%86%E7%A7%AF%E7%B4%AF/" style="font-size: 15px;">原始知识积累</a> <a href="/tags/PowerShell/" style="font-size: 15px;">PowerShell</a> <a href="/tags/AI%E8%BE%85%E5%8A%A9%E5%88%9B%E4%BD%9C/" style="font-size: 15px;">AI辅助创作</a> <a href="/tags/Vestigra%E5%AF%B9%E6%8A%97%E6%89%8B%E8%AE%B0/" style="font-size: 15px;">Vestigra对抗手记</a> <a href="/tags/macOS%E5%AE%89%E5%85%A8%E6%9C%BA%E5%88%B6/" style="font-size: 15px;">macOS安全机制</a> <a href="/tags/Gatekeeper/" style="font-size: 15px;">Gatekeeper</a> <a href="/tags/%E4%B8%80%E4%BA%BA%E5%85%AC%E5%8F%B8/" style="font-size: 15px;">一人公司</a> <a href="/tags/%E6%9E%B6%E6%9E%84%E5%B8%88%E4%B9%8B%E8%B7%AF/" style="font-size: 15px;">架构师之路</a> <a href="/tags/htb/" style="font-size: 15px;">htb</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/p/mac-studio-qwen3-8-27b-agent-prefill-optimization/">[AI辅助创作] Mac Studio 跑 Qwen3.8-27B：折腾两天，我才发现优化错了方向</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-adversarial-notes-01-gatekeeper-bypass-behavioral-detection/">Vestigra对抗手记01｜Gatekeeper Bypass：从规避到检测</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-4/">[AI辅助创作] Vestigra开发日记（四）：AI写代码很快，但证明它写对了很慢</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-3/">[AI辅助创作] Vestigra开发日记（三）：AI能写代码以后，我开始重做项目管理</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-2/">[AI辅助创作] Vestigra开发日记（二）：一次失灵的CPU告警，逼我重构Runtime</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-1/">[AI辅助创作] Vestigra开发日记（一）：从macOS黑匣子到行为保护</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-build-long-running-agent-tasks-zhukong-skill-ralph-loop-part-3/">如何实现Agent长时间执行任务（三）：GPT Pro工作流</a></li><li class="post-list-item"><a class="post-list-link" href="/p/solo-company-experiment-02/">一人公司生存实验 02：连续撞墙之后，我终于看清了自己的定位</a></li><li class="post-list-item"><a class="post-list-link" href="/p/solo-company-experiment-01/">一人公司生存实验 01：从“把事情做好”，到“证明有人买单”</a></li><li class="post-list-item"><a class="post-list-link" href="/p/life-balance-sheet-from-vacant-rental/">[AI辅助创作]从房东空置半年，到人生其实是一张资产负债表</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://gaoxiaodiao.com/" title="高小调博客" target="_blank">高小调博客</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">高小调博客.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.js"></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0"></script><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.css"><script type="text/javascript" src="/js/love.js?v=1.0.0"></script><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>
