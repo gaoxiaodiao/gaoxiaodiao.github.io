@@ -1,0 +1,108 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="描述"><title>[AI辅助创作] 探究多模型协作（二）：简单粗暴的协作机制 | 高小调博客</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/normalize/latest/normalize.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/pure-min.min.css"><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/pure/latest/grids-responsive-min.min.css"><link rel="stylesheet" href="//lib.baomitu.com/font-awesome/4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//lib.baomitu.com/jquery/latest/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><script type="text/javascript" src="//lib.baomitu.com/clipboard.js/latest/clipboard.min.js"></script><script type="text/javascript" src="//lib.baomitu.com/toastr.js/latest/toastr.min.js"></script><link rel="stylesheet" href="//lib.baomitu.com/toastr.js/latest/toastr.min.css"><meta name="generator" content="Hexo 8.1.1"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">[AI辅助创作] 探究多模型协作（二）：简单粗暴的协作机制</h1><a id="logo" href="/.">高小调博客</a><p class="description">人生，不止代码</p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> 首页</i></a><a href="/about-me/"><i class="fa fa-user"> 关于</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">[AI辅助创作] 探究多模型协作（二）：简单粗暴的协作机制</h1><div class="post-meta">2026-09-22</div><div class="post-content"><h2 id="结论"><a class="markdownIt-Anchor" href="#结论"></a> 结论</h2>
+<p>同样的任务，使用5.6 sol max花费$4.516，在本文的协作模式下花费：$1.123（文末有Pi Session的分享，你可以看到两个任务的整体细节）</p>
+<h2 id="前言"><a class="markdownIt-Anchor" href="#前言"></a> 前言</h2>
+<p>我在使用本地模型的时候，其实遇到了一个非常尴尬的问题。</p>
+<p>我一开始的思维也是想着，用一个模型来解决所有的问题。</p>
+<p>比如说我尝试过千问 27B，也尝试过千问 3.8 Flash Next。</p>
+<p>但是后来，随着我对本地模型的使用，我逐渐发现了一件事情。</p>
+<p><strong>当智能程度差不多的情况下，那速度一定是优先考虑的。</strong></p>
+<p>原因很简单。</p>
+<p>即使再智能的模型，它对于当前问题的假设都不一定成立，因此它就错失了快速验证的机会。</p>
+<p>尤其当两个模型的智能度差不多的时候。</p>
+<p>这个事情有点类似于人类。</p>
+<p><strong>60 的智商和 90 的智商差距很大，但是 90 智商和 100 智商的人则差距不大。</strong></p>
+<p>现在我的体验是，本地的模型，以千问 3.8 27B 和千问 3.8 Flash Next 为例，它们之间相差的可能就是 90 分到 100 分的差距，甚至于可能就是 90 分到 95 分的差距。</p>
+<p>换句话说，</p>
+<p><strong>它们的智力层面其实没有断代优势。</strong></p>
+<p>但是执行力方面来说，MoE 模型，也就是千问 3.8 Flash Next，明显速度要快于千问 27B。</p>
+<p>这就是为什么我在尝试了多个模型之后，我最终选择使用一个快的模型。</p>
+<p>所以到这里，我得出了第一个结论。</p>
+<p><strong>本地模型优先考虑的就是速度。在智能程度差不多的情况下，优先考虑速度。这个是我实践得出来的结论。</strong></p>
+<h2 id="但这个时候问题又来了"><a class="markdownIt-Anchor" href="#但这个时候问题又来了"></a> 但这个时候，问题又来了</h2>
+<p>我本地部署的千问 3.8 Flash Next，平均速度能达到 40 token/s。</p>
+<p>而这个时候，我发现了一个更快的模型。</p>
+<p>千问 3.6 35B-A3B，被 Splash 优化过之后，token 的吞吐率能达到 100 多 token/s。</p>
+<p>但是它的智能程度比较低。</p>
+<p>所以这时候就很难去平衡。</p>
+<p>我日常到底是使用千问 3.8 Flash Next，还是说我就用 A3B？</p>
+<p>而造成我很难去决策的原因，恰恰就在这里。</p>
+<p><strong>我并不了解 Flash Next，它的智能度能达到一个怎样的水平，A3B 能够很好地完成哪些事情，哪些事情不能够完成。</strong></p>
+<p>所以最近这两天，我就在疯狂使用 A3B。</p>
+<p>我让它去处理各种各样的问题，然后实时盯着它去处理。</p>
+<p>我想找出来的，其实就是它的能力边界（capability boundary）。</p>
+<p>当然这里面还有另外一种办法。</p>
+<p>用一个聪明的模型，也就是云端模型，去监督它完成，就不需要我人工盯着。</p>
+<p>但是这部分内容目前我还没有体系化的操作，只是零散地在使用，并没有形成一个系统的操作办法。</p>
+<p>直到后来，我突然灵光一现。</p>
+<h2 id="为什么一定要二选一"><a class="markdownIt-Anchor" href="#为什么一定要二选一"></a> 为什么一定要二选一？</h2>
+<p>我突然在考虑这个问题。</p>
+<p><strong>能不能利用 Flash Next 的思考链？它负责判断，然后快的模型 A3B，它去负责执行。</strong></p>
+<p>那在这个过程中，其实就有很大的操作空间。</p>
+<p>因为我们明确地知道，A3B 一定是比 Flash Next 要笨的，智能程度要低。</p>
+<p>所以 Flash Next 到底应该分配什么样的任务给 A3B，这其实又是一个值得权衡的事情。</p>
+<p>但我一开始并没有搞得很复杂。</p>
+<p>我用了一个最简单、最粗暴的分配方式。</p>
+<p>我写了一个 Pi extension。</p>
+<p>在 Pi 的主 Session 里面，我去掉了默认的 read、write 等四个简单工具。</p>
+<p>唯一的工具只有一个。</p>
+<p><strong>Splash。</strong></p>
+<p>主模型想做事情，只能通过 Splash。</p>
+<p>而当它通过 Splash 去下发任务的时候，底层实际上是由速度很快的 A3B 来完成。</p>
+<p>也就是说，</p>
+<p><strong>Flash Next 负责判断，A3B 负责执行。</strong></p>
+<p>这套东西做出来之后，我马上又开始担心另外一个问题。</p>
+<h2 id="小模型会不会把大模型带沟里"><a class="markdownIt-Anchor" href="#小模型会不会把大模型带沟里"></a> 小模型会不会把大模型带沟里？</h2>
+<p>A3B 的智能程度比 Flash Next 低。</p>
+<p>那它会不会因为智能程度有限，导致它分析出来的原因并不是真实的原因？</p>
+<p>如果它给出了一个错误的结论，而且这个错误结论又非常像真的，那么它是不是有可能误导智能度更高的模型？</p>
+<p>基于这个话题，我还专门和 ChatGPT 做了讨论。</p>
+<p>我甚至想过这个问题。</p>
+<p>能不能给我举出更多的反例，告诉我这种模式不行？</p>
+<p>但实际上最终，我觉得这种模式是可以的。</p>
+<p>为什么？</p>
+<p>因为我日常在使用这些模型的过程中，可以理解为我是一个满分的模型。</p>
+<p>不管是前沿模型或者怎么样的模型也好，它们都是智能度档次比我要低一级的模型。</p>
+<p>而当这些模型，即使是前沿模型，它也会出现一些错误的推论，或者说它给出的并不是最优方案。</p>
+<p>但这个时候，我会根据我的直觉，根据我的经验直觉，直接指出它可能存在误导性的做法。</p>
+<p>所以我当时得出了这个判断。</p>
+<p><strong>只要模型的智能程度足够高，那么小模型、快模型给出的错误结论，并不一定能够误导高智能模型。</strong></p>
+<p>后来把这套方式推广到云端模型之后，一次实际案例真正让我确认了这一点。</p>
+<p>然后我把这种方式推广到了云端模型</p>
+<p>随着越来越聪明的云端模型出现，比如 GPT-6，它消耗额度是非常快的。</p>
+<p>并且根据网友的实测发现，GPT-6 对于订阅用户来说，它本身的额度消耗就要比 5.6 快，并且额度更少。</p>
+<p>因此即使我是 20 倍的订阅用户，我只使用 GPT-6 的话，其实也是很快就能够把整个 token 花完。</p>
+<p>额度就是这么花完的。</p>
+<p><strong>GPT-6 做了大量的调研工作，大量的分析工作，它自己去读各种各样的文件。</strong></p>
+<p>但这些事情，真的都需要最聪明的模型自己来做吗？</p>
+<p>所以我又做了一个尝试。</p>
+<p>我用 Pi，把主模型变成了 5.6 Sol，然后执行模型依然由 A3B 去做。</p>
+<p>这一次，A3B 确实给出了一个错误结论。</p>
+<p>但是 5.6 Sol 很敏锐地发现这个结论存在问题，没有直接接受，而是再次让 A3B 去验证。</p>
+<p>最终 A3B 重新检查之后，接受了自己的错误，纠正了之前的结论。</p>
+<p>这个案例真正让我确认了一件事情。</p>
+<p><strong>当两个模型的智能程度存在断代优势的时候，小模型给出的错误结论，根本没有那么容易误导高智能模型。</strong></p>
+<p>高智能模型可以发现这个结论有问题，然后继续让快模型去验证。</p>
+<p>到这里，我越来越觉得，这已经不仅仅是 Flash Next 和 A3B 怎么搭配的问题了。</p>
+<h2 id="一个简单粗暴的协作机制"><a class="markdownIt-Anchor" href="#一个简单粗暴的协作机制"></a> 一个简单粗暴的协作机制</h2>
+<p>以上就是我最近发现的一个东西:</p>
+<p><strong>一个简单粗暴的协作机制，但很有效。</strong></p>
+<p>判断由聪明的模型负责。</p>
+<p>快的模型负责执行。</p>
+<p>快模型可以犯错。</p>
+<p>高智能模型负责判断这个结果到底可不可信。</p>
+<p>如果不可信，就继续让快模型验证。</p>
+<p>它可以加速本地模型的运行。</p>
+<p>同时也能够有效地降低云端模型的消耗。</p>
+<p>我一开始一直在纠结。</p>
+<p>千问 27B 和 Flash Next 到底选哪个？</p>
+<p>Flash Next 和 A3B 到底选哪个？</p>
+<p>但现在我开始觉得，也许这个问题本身就问错了。</p>
+<p>因为可能根本不需要只选一个模型。</p>
+<p>真正值得研究的问题，开始变了。</p>
+<p><strong>不同智能程度、不同速度、不同成本的模型，到底应该怎么组织起来。</strong></p>
+<h2 id="实例"><a class="markdownIt-Anchor" href="#实例"></a> 实例</h2>
+<p><a target="_blank" rel="noopener" href="https://pi.dev/session/#be14aab8d0119c329043e5577aed7741">5.6 sol负责思考，本地A3B负责执行,花费$1.123</a><br />
+<a target="_blank" rel="noopener" href="https://gist.github.com/gaoxiaodiao/be14aab8d0119c329043e5577aed7741">https://gist.github.com/gaoxiaodiao/be14aab8d0119c329043e5577aed7741</a></p>
+<p><a target="_blank" rel="noopener" href="https://pi.dev/session/#7ac76740f1e461a8a699e1ea98916454">5.6 sol负责一切，花费$4.516</a><br />
+<a target="_blank" rel="noopener" href="https://gist.github.com/gaoxiaodiao/7ac76740f1e461a8a699e1ea98916454">https://gist.github.com/gaoxiaodiao/7ac76740f1e461a8a699e1ea98916454</a></p>
+</div><div class="tags"><a href="/tags/AI辅助创作"><i class="fa fa-tag">AI辅助创作</i></a><a href="/tags/多模型协作"><i class="fa fa-tag">多模型协作</i></a></div><div class="post-nav"><a class="next" href="/p/exploring-multi-model-collaboration-part-1/">[AI辅助创作] 探究多模型协作（一）：愿景与前言</a></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><div class="author-info"><a class="info-avatar" href="/about-me/" title="关于"><img class="nofancybox" src="/img/avatar.png"/></a><p>stay hungry, stay foolish</p><a class="info-icon" href="https://twitter.com/gaoxiaodiao" title="Twitter" target="_blank" style="margin-inline:5px"> <i class="fa fa-twitter-square" style="margin-inline:5px"></i></a><a class="info-icon" href="mailto:admin@domain.com" title="Email" target="_blank" style="margin-inline:5px"> <i class="fa fa-envelope-square" style="margin-inline:5px"></i></a><a class="info-icon" href="https://github.com/gaoxiaodiao" title="Github" target="_blank" style="margin-inline:5px"> <i class="fa fa-github-square" style="margin-inline:5px"></i></a><a class="info-icon" href="/atom.xml" title="RSS" target="_blank" style="margin-inline:5px"> <i class="fa fa-rss-square" style="margin-inline:5px"></i></a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/tags/%E5%A5%87%E6%8A%80%E6%B7%AB%E5%B7%A7/" style="font-size: 15px;">奇技淫巧</a> <a href="/tags/AI%E9%95%BF%E4%BB%BB%E5%8A%A1/" style="font-size: 15px;">AI长任务</a> <a href="/tags/%E5%85%85%E7%94%B5%E4%BC%9A%E5%91%98%E4%B8%93%E5%B1%9E/" style="font-size: 15px;">充电会员专属</a> <a href="/tags/%E7%8B%AC%E7%AB%8B%E5%BC%80%E5%8F%91/" style="font-size: 15px;">独立开发</a> <a href="/tags/AI%E7%BC%96%E7%A8%8B%E6%B5%81%E6%B0%B4%E7%BA%BF%E7%B3%BB%E5%88%97/" style="font-size: 15px;">AI编程流水线系列</a> <a href="/tags/linux%E5%BC%80%E5%8F%91/" style="font-size: 15px;">linux开发</a> <a href="/tags/%E5%BF%83%E8%B7%AF%E5%8E%86%E7%A8%8B/" style="font-size: 15px;">心路历程</a> <a href="/tags/mac%E5%BC%80%E5%8F%91/" style="font-size: 15px;">mac开发</a> <a href="/tags/%E5%89%AF%E4%B8%9A%E6%8E%A2%E7%B4%A2/" style="font-size: 15px;">副业探索</a> <a href="/tags/CTF/" style="font-size: 15px;">CTF</a> <a href="/tags/ChatGPT%E6%97%A0%E6%B3%95%E5%81%9A%E5%88%B0%E7%9A%84%E4%BA%8B%E6%83%85/" style="font-size: 15px;">ChatGPT无法做到的事情</a> <a href="/tags/PowerShell/" style="font-size: 15px;">PowerShell</a> <a href="/tags/%E5%B7%A5%E6%AC%B2%E5%96%84%E5%85%B6%E4%BA%8B-%E5%BF%85%E5%85%88%E5%88%A9%E5%85%B6%E5%99%A8/" style="font-size: 15px;">工欲善其事,必先利其器</a> <a href="/tags/Foundry/" style="font-size: 15px;">Foundry</a> <a href="/tags/%E5%8E%9F%E5%A7%8B%E7%9F%A5%E8%AF%86%E7%A7%AF%E7%B4%AF/" style="font-size: 15px;">原始知识积累</a> <a href="/tags/%E9%80%86%E5%90%91-%E7%A0%B4%E8%A7%A3/" style="font-size: 15px;">逆向&破解</a> <a href="/tags/%E5%BC%80%E5%8F%91-%E4%BB%A3%E7%A0%81/" style="font-size: 15px;">开发&代码</a> <a href="/tags/%E7%AC%94%E8%AE%B0/" style="font-size: 15px;">笔记</a> <a href="/tags/%E7%AC%AC%E4%B8%89%E6%96%B9%E5%BA%93%E7%BC%96%E8%AF%91/" style="font-size: 15px;">第三方库编译</a> <a href="/tags/%E5%A4%AA%E7%9B%91/" style="font-size: 15px;">太监</a> <a href="/tags/%E6%95%85%E9%9A%9C%E6%8E%92%E9%99%A4-%E4%BF%AE%E5%A4%8D/" style="font-size: 15px;">故障排除/修复</a> <a href="/tags/%E4%B8%80%E4%BA%BA%E5%85%AC%E5%8F%B8/" style="font-size: 15px;">一人公司</a> <a href="/tags/AI%E8%BE%85%E5%8A%A9%E5%88%9B%E4%BD%9C/" style="font-size: 15px;">AI辅助创作</a> <a href="/tags/%E6%9E%B6%E6%9E%84%E5%B8%88%E4%B9%8B%E8%B7%AF/" style="font-size: 15px;">架构师之路</a> <a href="/tags/Vestigra%E5%AF%B9%E6%8A%97%E6%89%8B%E8%AE%B0/" style="font-size: 15px;">Vestigra对抗手记</a> <a href="/tags/macOS%E5%AE%89%E5%85%A8%E6%9C%BA%E5%88%B6/" style="font-size: 15px;">macOS安全机制</a> <a href="/tags/Gatekeeper/" style="font-size: 15px;">Gatekeeper</a> <a href="/tags/htb/" style="font-size: 15px;">htb</a> <a href="/tags/%E5%A4%9A%E6%A8%A1%E5%9E%8B%E5%8D%8F%E4%BD%9C/" style="font-size: 15px;">多模型协作</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/p/exploring-multi-model-collaboration-part-2/">[AI辅助创作] 探究多模型协作（二）：简单粗暴的协作机制</a></li><li class="post-list-item"><a class="post-list-link" href="/p/exploring-multi-model-collaboration-part-1/">[AI辅助创作] 探究多模型协作（一）：愿景与前言</a></li><li class="post-list-item"><a class="post-list-link" href="/p/mac-studio-qwen3-8-27b-agent-prefill-optimization/">[AI辅助创作] Mac Studio 跑 Qwen3.8-27B：折腾两天，我才发现优化错了方向</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-adversarial-notes-01-gatekeeper-bypass-behavioral-detection/">Vestigra对抗手记01｜Gatekeeper Bypass：从规避到检测</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-4/">[AI辅助创作] Vestigra开发日记（四）：AI写代码很快，但证明它写对了很慢</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-3/">[AI辅助创作] Vestigra开发日记（三）：AI能写代码以后，我开始重做项目管理</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-2/">[AI辅助创作] Vestigra开发日记（二）：一次失灵的CPU告警，逼我重构Runtime</a></li><li class="post-list-item"><a class="post-list-link" href="/p/vestigra-development-diary-1/">[AI辅助创作] Vestigra开发日记（一）：从macOS黑匣子到行为保护</a></li><li class="post-list-item"><a class="post-list-link" href="/p/how-to-build-long-running-agent-tasks-zhukong-skill-ralph-loop-part-3/">如何实现Agent长时间执行任务（三）：GPT Pro工作流</a></li><li class="post-list-item"><a class="post-list-link" href="/p/solo-company-experiment-02/">一人公司生存实验 02：连续撞墙之后，我终于看清了自己的定位</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> 友情链接</i></div><ul></ul><a href="https://gaoxiaodiao.com/" title="高小调博客" target="_blank">高小调博客</a></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2026 <a href="/." rel="nofollow">高小调博客.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.js"></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0"></script><link rel="stylesheet" type="text/css" href="//lib.baomitu.com/fancybox/latest/jquery.fancybox.min.css"><script type="text/javascript" src="/js/love.js?v=1.0.0"></script><script type="text/javascript" src="/js/copycode.js?v=1.0.0" successtext="复制成功！"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css?v=1.0.0"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>
